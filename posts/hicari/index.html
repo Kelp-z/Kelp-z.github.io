@@ -83,160 +83,12 @@ public Connection getConnection() throws SQLException {
         } finally {
             this.suspendResumeLock.release();
         }
-    }
+}
 
+获取挂起/恢复锁
 
-1. 获取挂起/恢复锁
-
-java
 this.suspendResumeLock.acquire();
-作用：获取一个锁，用于控制连接池的挂起/恢复操作。
-
-场景	说明
-连接池挂起	暂停所有连接获取操作（如维护期间）
-连接池恢复	恢复连接获取操作
-锁的作用	确保在获取连接期间，连接池不会被挂起
-2. 记录开始时间
-
-java
-long startTime = ClockSource.currentTime();
-作用：记录开始获取连接的时间，用于后续的超时计算和性能统计。
-
-3. 核心循环：获取连接
-
-java
-while(true) {
-    // 从连接袋中获取连接
-    PoolEntry poolEntry = (PoolEntry)this.connectionBag.borrow(timeout, TimeUnit.MILLISECONDS);
-    
-    if (poolEntry != null) {
-        // 连接获取成功，进行有效性检查
-        // ...
-    }
-    // 超时处理
-    // ...
-}
-connectionBag.borrow() 是核心方法，从连接池中借出一个连接条目。
-
-4. 连接有效性检查
-
-java
-if (!poolEntry.isMarkedEvicted() &amp;&amp; 
-    (ClockSource.elapsedMillis(poolEntry.lastAccessed, now) &lt;= this.aliveBypassWindowMs || 
-     !this.isConnectionDead(poolEntry.connection))) {
-    // 连接有效
-}
-检查逻辑：
-
-检查项	说明
-!poolEntry.isMarkedEvicted()	连接未被标记为驱逐
-elapsedMillis(...) &lt;= aliveBypassWindowMs	连接最近被访问过（在存活窗口期内）
-!isConnectionDead(poolEntry.connection)	连接未死亡（通过 ping 测试）
-设计意图：避免使用无效的连接（已关闭、超时、断开等）。
-
-5. 创建代理连接
-
-java
-Connection var10 = poolEntry.createProxyConnection(this.leakTaskFactory.schedule(poolEntry));
-return var10;
-关键操作：
-
-步骤	说明
-leakTaskFactory.schedule(poolEntry)	调度一个连接泄漏检测任务
-poolEntry.createProxyConnection(...)	创建代理连接对象
-代理连接的作用：
-
-拦截 close() 方法，实现连接归还而不是真正关闭
-记录连接使用信息，用于泄漏检测
-6. 处理无效连接
-
-java
-this.closeConnection(poolEntry, poolEntry.isMarkedEvicted() ? &#34;(connection was evicted)&#34; : &#34;(connection is dead)&#34;);
-timeout = hardTimeout - ClockSource.elapsedMillis(startTime);
-if (timeout &gt; 0L) {
-    continue; // 继续尝试获取连接
-}
-逻辑：
-
-如果连接无效，关闭它并从池中移除
-计算剩余超时时间
-如果还有时间，继续尝试获取连接
-7. 超时处理
-
-java
-this.metricsTracker.recordBorrowTimeoutStats(startTime);
-throw this.createTimeoutException(startTime);
-作用：记录超时统计信息并抛出超时异常。
-
-8. 异常处理
-
-java
-} catch (InterruptedException var14) {
-    Thread.currentThread().interrupt();
-    throw new SQLException(this.poolName &#43; &#34; - Interrupted during connection acquisition&#34;, e);
-}
-处理中断：
-
-恢复线程的中断状态
-抛出 SQLException 异常
-9. 释放锁
-
-java
-} finally {
-    this.suspendResumeLock.release();
-}
-确保锁被释放：无论是否成功获取连接，都要释放挂起/恢复锁。
-    
-    
-三、核心数据结构
-PoolEntry —— 连接条目
-
-java
-public class PoolEntry {
-    private final Connection connection; // 真正的 JDBC 连接
-    private volatile long lastAccessed;  // 最后访问时间
-    private volatile boolean evicted;    // 是否被驱逐
-    
-    public Connection createProxyConnection(LeakTask leakTask) {
-        // 创建代理连接
-    }
-}
-connectionBag —— 连接袋
-HikariCP 使用一个高效的数据结构管理连接，支持快速的借用和归还操作。
-
-四、流程图
-
-plainText
-getConnection(hardTimeout)
-       ↓
-acquire suspendResumeLock
-       ↓
-record startTime
-       ↓
-┌─────────────────────────┐
-│      while(true)        │
-│    borrow connection    │←┐
-│      from connectionBag │ │
-└───────────┬─────────────┘ │
-            ↓               │
-    poolEntry != null?      │
-            ↓               │
-       检查连接有效性        │
-            ↓               │
-       有效?                │
-      ↓      ↓             │
-    是      否              │
-    ↓        ↓             │
- 创建代理   关闭连接         │
-    ↓      更新超时         │
- 返回连接  continue ←───────┘
-            ↓
-   timeout &lt;= 0?
-            ↓
-       抛出超时异常
-            ↓
-release suspendResumeLock
-">
+作用：获取一个锁，用于控制连接池的挂起/恢复操作。">
 <meta name="author" content="Your Name">
 
 
@@ -322,160 +174,12 @@ public Connection getConnection() throws SQLException {
         } finally {
             this.suspendResumeLock.release();
         }
-    }
+}
 
+获取挂起/恢复锁
 
-1. 获取挂起/恢复锁
-
-java
 this.suspendResumeLock.acquire();
-作用：获取一个锁，用于控制连接池的挂起/恢复操作。
-
-场景	说明
-连接池挂起	暂停所有连接获取操作（如维护期间）
-连接池恢复	恢复连接获取操作
-锁的作用	确保在获取连接期间，连接池不会被挂起
-2. 记录开始时间
-
-java
-long startTime = ClockSource.currentTime();
-作用：记录开始获取连接的时间，用于后续的超时计算和性能统计。
-
-3. 核心循环：获取连接
-
-java
-while(true) {
-    // 从连接袋中获取连接
-    PoolEntry poolEntry = (PoolEntry)this.connectionBag.borrow(timeout, TimeUnit.MILLISECONDS);
-    
-    if (poolEntry != null) {
-        // 连接获取成功，进行有效性检查
-        // ...
-    }
-    // 超时处理
-    // ...
-}
-connectionBag.borrow() 是核心方法，从连接池中借出一个连接条目。
-
-4. 连接有效性检查
-
-java
-if (!poolEntry.isMarkedEvicted() &amp;&amp; 
-    (ClockSource.elapsedMillis(poolEntry.lastAccessed, now) &lt;= this.aliveBypassWindowMs || 
-     !this.isConnectionDead(poolEntry.connection))) {
-    // 连接有效
-}
-检查逻辑：
-
-检查项	说明
-!poolEntry.isMarkedEvicted()	连接未被标记为驱逐
-elapsedMillis(...) &lt;= aliveBypassWindowMs	连接最近被访问过（在存活窗口期内）
-!isConnectionDead(poolEntry.connection)	连接未死亡（通过 ping 测试）
-设计意图：避免使用无效的连接（已关闭、超时、断开等）。
-
-5. 创建代理连接
-
-java
-Connection var10 = poolEntry.createProxyConnection(this.leakTaskFactory.schedule(poolEntry));
-return var10;
-关键操作：
-
-步骤	说明
-leakTaskFactory.schedule(poolEntry)	调度一个连接泄漏检测任务
-poolEntry.createProxyConnection(...)	创建代理连接对象
-代理连接的作用：
-
-拦截 close() 方法，实现连接归还而不是真正关闭
-记录连接使用信息，用于泄漏检测
-6. 处理无效连接
-
-java
-this.closeConnection(poolEntry, poolEntry.isMarkedEvicted() ? &#34;(connection was evicted)&#34; : &#34;(connection is dead)&#34;);
-timeout = hardTimeout - ClockSource.elapsedMillis(startTime);
-if (timeout &gt; 0L) {
-    continue; // 继续尝试获取连接
-}
-逻辑：
-
-如果连接无效，关闭它并从池中移除
-计算剩余超时时间
-如果还有时间，继续尝试获取连接
-7. 超时处理
-
-java
-this.metricsTracker.recordBorrowTimeoutStats(startTime);
-throw this.createTimeoutException(startTime);
-作用：记录超时统计信息并抛出超时异常。
-
-8. 异常处理
-
-java
-} catch (InterruptedException var14) {
-    Thread.currentThread().interrupt();
-    throw new SQLException(this.poolName &#43; &#34; - Interrupted during connection acquisition&#34;, e);
-}
-处理中断：
-
-恢复线程的中断状态
-抛出 SQLException 异常
-9. 释放锁
-
-java
-} finally {
-    this.suspendResumeLock.release();
-}
-确保锁被释放：无论是否成功获取连接，都要释放挂起/恢复锁。
-    
-    
-三、核心数据结构
-PoolEntry —— 连接条目
-
-java
-public class PoolEntry {
-    private final Connection connection; // 真正的 JDBC 连接
-    private volatile long lastAccessed;  // 最后访问时间
-    private volatile boolean evicted;    // 是否被驱逐
-    
-    public Connection createProxyConnection(LeakTask leakTask) {
-        // 创建代理连接
-    }
-}
-connectionBag —— 连接袋
-HikariCP 使用一个高效的数据结构管理连接，支持快速的借用和归还操作。
-
-四、流程图
-
-plainText
-getConnection(hardTimeout)
-       ↓
-acquire suspendResumeLock
-       ↓
-record startTime
-       ↓
-┌─────────────────────────┐
-│      while(true)        │
-│    borrow connection    │←┐
-│      from connectionBag │ │
-└───────────┬─────────────┘ │
-            ↓               │
-    poolEntry != null?      │
-            ↓               │
-       检查连接有效性        │
-            ↓               │
-       有效?                │
-      ↓      ↓             │
-    是      否              │
-    ↓        ↓             │
- 创建代理   关闭连接         │
-    ↓      更新超时         │
- 返回连接  continue ←───────┘
-            ↓
-   timeout &lt;= 0?
-            ↓
-       抛出超时异常
-            ↓
-release suspendResumeLock
-">
+作用：获取一个锁，用于控制连接池的挂起/恢复操作。">
 <meta property="og:url" content="https://kelp-z.github.io/posts/hicari/">
 <meta property="og:site_name" content="我的笔记">
 <meta property="og:image" content="https://kelp-z.github.io/images/og-default.png">
@@ -562,160 +266,12 @@ public Connection getConnection() throws SQLException {
         } finally {
             this.suspendResumeLock.release();
         }
-    }
+}
 
+获取挂起/恢复锁
 
-1. 获取挂起/恢复锁
-
-java
 this.suspendResumeLock.acquire();
-作用：获取一个锁，用于控制连接池的挂起/恢复操作。
-
-场景	说明
-连接池挂起	暂停所有连接获取操作（如维护期间）
-连接池恢复	恢复连接获取操作
-锁的作用	确保在获取连接期间，连接池不会被挂起
-2. 记录开始时间
-
-java
-long startTime = ClockSource.currentTime();
-作用：记录开始获取连接的时间，用于后续的超时计算和性能统计。
-
-3. 核心循环：获取连接
-
-java
-while(true) {
-    // 从连接袋中获取连接
-    PoolEntry poolEntry = (PoolEntry)this.connectionBag.borrow(timeout, TimeUnit.MILLISECONDS);
-    
-    if (poolEntry != null) {
-        // 连接获取成功，进行有效性检查
-        // ...
-    }
-    // 超时处理
-    // ...
-}
-connectionBag.borrow() 是核心方法，从连接池中借出一个连接条目。
-
-4. 连接有效性检查
-
-java
-if (!poolEntry.isMarkedEvicted() &amp;&amp; 
-    (ClockSource.elapsedMillis(poolEntry.lastAccessed, now) &lt;= this.aliveBypassWindowMs || 
-     !this.isConnectionDead(poolEntry.connection))) {
-    // 连接有效
-}
-检查逻辑：
-
-检查项	说明
-!poolEntry.isMarkedEvicted()	连接未被标记为驱逐
-elapsedMillis(...) &lt;= aliveBypassWindowMs	连接最近被访问过（在存活窗口期内）
-!isConnectionDead(poolEntry.connection)	连接未死亡（通过 ping 测试）
-设计意图：避免使用无效的连接（已关闭、超时、断开等）。
-
-5. 创建代理连接
-
-java
-Connection var10 = poolEntry.createProxyConnection(this.leakTaskFactory.schedule(poolEntry));
-return var10;
-关键操作：
-
-步骤	说明
-leakTaskFactory.schedule(poolEntry)	调度一个连接泄漏检测任务
-poolEntry.createProxyConnection(...)	创建代理连接对象
-代理连接的作用：
-
-拦截 close() 方法，实现连接归还而不是真正关闭
-记录连接使用信息，用于泄漏检测
-6. 处理无效连接
-
-java
-this.closeConnection(poolEntry, poolEntry.isMarkedEvicted() ? &#34;(connection was evicted)&#34; : &#34;(connection is dead)&#34;);
-timeout = hardTimeout - ClockSource.elapsedMillis(startTime);
-if (timeout &gt; 0L) {
-    continue; // 继续尝试获取连接
-}
-逻辑：
-
-如果连接无效，关闭它并从池中移除
-计算剩余超时时间
-如果还有时间，继续尝试获取连接
-7. 超时处理
-
-java
-this.metricsTracker.recordBorrowTimeoutStats(startTime);
-throw this.createTimeoutException(startTime);
-作用：记录超时统计信息并抛出超时异常。
-
-8. 异常处理
-
-java
-} catch (InterruptedException var14) {
-    Thread.currentThread().interrupt();
-    throw new SQLException(this.poolName &#43; &#34; - Interrupted during connection acquisition&#34;, e);
-}
-处理中断：
-
-恢复线程的中断状态
-抛出 SQLException 异常
-9. 释放锁
-
-java
-} finally {
-    this.suspendResumeLock.release();
-}
-确保锁被释放：无论是否成功获取连接，都要释放挂起/恢复锁。
-    
-    
-三、核心数据结构
-PoolEntry —— 连接条目
-
-java
-public class PoolEntry {
-    private final Connection connection; // 真正的 JDBC 连接
-    private volatile long lastAccessed;  // 最后访问时间
-    private volatile boolean evicted;    // 是否被驱逐
-    
-    public Connection createProxyConnection(LeakTask leakTask) {
-        // 创建代理连接
-    }
-}
-connectionBag —— 连接袋
-HikariCP 使用一个高效的数据结构管理连接，支持快速的借用和归还操作。
-
-四、流程图
-
-plainText
-getConnection(hardTimeout)
-       ↓
-acquire suspendResumeLock
-       ↓
-record startTime
-       ↓
-┌─────────────────────────┐
-│      while(true)        │
-│    borrow connection    │←┐
-│      from connectionBag │ │
-└───────────┬─────────────┘ │
-            ↓               │
-    poolEntry != null?      │
-            ↓               │
-       检查连接有效性        │
-            ↓               │
-       有效?                │
-      ↓      ↓             │
-    是      否              │
-    ↓        ↓             │
- 创建代理   关闭连接         │
-    ↓      更新超时         │
- 返回连接  continue ←───────┘
-            ↓
-   timeout &lt;= 0?
-            ↓
-       抛出超时异常
-            ↓
-release suspendResumeLock
-">
+作用：获取一个锁，用于控制连接池的挂起/恢复操作。">
 
 
 
@@ -878,29 +434,23 @@ release suspendResumeLock
 </span></span><span style="display:flex;"><span>        <span style="color:#111">}</span> <span style="color:#00a8c8">finally</span> <span style="color:#111">{</span>
 </span></span><span style="display:flex;"><span>            <span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">suspendResumeLock</span><span style="color:#111">.</span><span style="color:#75af00">release</span><span style="color:#111">();</span>
 </span></span><span style="display:flex;"><span>        <span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#111">1</span><span style="color:#111">.</span> <span style="color:#111">获取挂起</span><span style="color:#f92672">/</span><span style="color:#111">恢复锁</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#111">java</span>
-</span></span><span style="display:flex;"><span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">suspendResumeLock</span><span style="color:#111">.</span><span style="color:#75af00">acquire</span><span style="color:#111">();</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">作用</span><span style="color:#960050;background-color:#1e0010">：</span><span style="color:#111">获取一个锁</span><span style="color:#960050;background-color:#1e0010">，</span><span style="color:#111">用于控制连接池的挂起</span><span style="color:#f92672">/</span><span style="color:#111">恢复操作</span><span style="color:#960050;background-color:#1e0010">。</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#111">场景</span>	<span style="color:#111">说明</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">连接池挂起</span>	<span style="color:#111">暂停所有连接获取操作</span><span style="color:#960050;background-color:#1e0010">（</span><span style="color:#111">如维护期间</span><span style="color:#960050;background-color:#1e0010">）</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">连接池恢复</span>	<span style="color:#111">恢复连接获取操作</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">锁的作用</span>	<span style="color:#111">确保在获取连接期间</span><span style="color:#960050;background-color:#1e0010">，</span><span style="color:#111">连接池不会被挂起</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">2</span><span style="color:#111">.</span> <span style="color:#111">记录开始时间</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#111">java</span>
-</span></span><span style="display:flex;"><span><span style="color:#00a8c8">long</span> <span style="color:#111">startTime</span> <span style="color:#f92672">=</span> <span style="color:#111">ClockSource</span><span style="color:#111">.</span><span style="color:#75af00">currentTime</span><span style="color:#111">();</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">作用</span><span style="color:#960050;background-color:#1e0010">：</span><span style="color:#111">记录开始获取连接的时间</span><span style="color:#960050;background-color:#1e0010">，</span><span style="color:#111">用于后续的超时计算和性能统计</span><span style="color:#960050;background-color:#1e0010">。</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#111">3</span><span style="color:#111">.</span> <span style="color:#111">核心循环</span><span style="color:#960050;background-color:#1e0010">：</span><span style="color:#111">获取连接</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#111">java</span>
-</span></span><span style="display:flex;"><span><span style="color:#75af00">while</span><span style="color:#111">(</span><span style="color:#00a8c8">true</span><span style="color:#111">)</span> <span style="color:#111">{</span>
+</span></span><span style="display:flex;"><span><span style="color:#111">}</span>
+</span></span></code></pre></div><ol>
+<li>获取挂起/恢复锁</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">suspendResumeLock</span><span style="color:#111">.</span><span style="color:#75af00">acquire</span><span style="color:#111">();</span>
+</span></span></code></pre></div><p>作用：获取一个锁，用于控制连接池的挂起/恢复操作。</p>
+<p>场景	说明
+连接池挂起	暂停所有连接获取操作（如维护期间）
+连接池恢复	恢复连接获取操作
+锁的作用	确保在获取连接期间，连接池不会被挂起
+2. 记录开始时间</p>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#00a8c8">long</span> <span style="color:#111">startTime</span> <span style="color:#f92672">=</span> <span style="color:#111">ClockSource</span><span style="color:#111">.</span><span style="color:#75af00">currentTime</span><span style="color:#111">();</span>
+</span></span></code></pre></div><p>作用：记录开始获取连接的时间，用于后续的超时计算和性能统计。</p>
+<ol start="3">
+<li>核心循环：获取连接</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#00a8c8">while</span><span style="color:#111">(</span><span style="color:#00a8c8">true</span><span style="color:#111">)</span> <span style="color:#111">{</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#75715e">// 从连接袋中获取连接</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#111">PoolEntry</span> <span style="color:#111">poolEntry</span> <span style="color:#f92672">=</span> <span style="color:#111">(</span><span style="color:#111">PoolEntry</span><span style="color:#111">)</span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">connectionBag</span><span style="color:#111">.</span><span style="color:#75af00">borrow</span><span style="color:#111">(</span><span style="color:#111">timeout</span><span style="color:#111">,</span> <span style="color:#111">TimeUnit</span><span style="color:#111">.</span><span style="color:#75af00">MILLISECONDS</span><span style="color:#111">);</span>
 </span></span><span style="display:flex;"><span>    
@@ -911,127 +461,106 @@ release suspendResumeLock
 </span></span><span style="display:flex;"><span>    <span style="color:#75715e">// 超时处理</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...</span>
 </span></span><span style="display:flex;"><span><span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">connectionBag</span><span style="color:#111">.</span><span style="color:#75af00">borrow</span><span style="color:#111">()</span> <span style="color:#111">是核心方法</span><span style="color:#960050;background-color:#1e0010">，</span><span style="color:#111">从连接池中借出一个连接条目</span><span style="color:#960050;background-color:#1e0010">。</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#111">4</span><span style="color:#111">.</span> <span style="color:#111">连接有效性检查</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#111">java</span>
-</span></span><span style="display:flex;"><span><span style="color:#75af00">if</span> <span style="color:#111">(</span><span style="color:#f92672">!</span><span style="color:#111">poolEntry</span><span style="color:#111">.</span><span style="color:#75af00">isMarkedEvicted</span><span style="color:#111">()</span> <span style="color:#f92672">&amp;&amp;</span> 
+</span></span></code></pre></div><p>connectionBag.borrow() 是核心方法，从连接池中借出一个连接条目。</p>
+<ol start="4">
+<li>连接有效性检查</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#00a8c8">if</span> <span style="color:#111">(</span><span style="color:#f92672">!</span><span style="color:#111">poolEntry</span><span style="color:#111">.</span><span style="color:#75af00">isMarkedEvicted</span><span style="color:#111">()</span> <span style="color:#f92672">&amp;&amp;</span> 
 </span></span><span style="display:flex;"><span>    <span style="color:#111">(</span><span style="color:#111">ClockSource</span><span style="color:#111">.</span><span style="color:#75af00">elapsedMillis</span><span style="color:#111">(</span><span style="color:#111">poolEntry</span><span style="color:#111">.</span><span style="color:#75af00">lastAccessed</span><span style="color:#111">,</span> <span style="color:#111">now</span><span style="color:#111">)</span> <span style="color:#f92672">&lt;=</span> <span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">aliveBypassWindowMs</span> <span style="color:#f92672">||</span> 
 </span></span><span style="display:flex;"><span>     <span style="color:#f92672">!</span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">isConnectionDead</span><span style="color:#111">(</span><span style="color:#111">poolEntry</span><span style="color:#111">.</span><span style="color:#75af00">connection</span><span style="color:#111">)))</span> <span style="color:#111">{</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#75715e">// 连接有效</span>
 </span></span><span style="display:flex;"><span><span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">检查逻辑</span><span style="color:#960050;background-color:#1e0010">：</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#111">检查项</span>	<span style="color:#111">说明</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">!</span><span style="color:#111">poolEntry</span><span style="color:#111">.</span><span style="color:#75af00">isMarkedEvicted</span><span style="color:#111">()</span>	<span style="color:#111">连接未被标记为驱逐</span>
-</span></span><span style="display:flex;"><span><span style="color:#75af00">elapsedMillis</span><span style="color:#111">(...)</span> <span style="color:#f92672">&lt;=</span> <span style="color:#111">aliveBypassWindowMs</span>	<span style="color:#111">连接最近被访问过</span><span style="color:#960050;background-color:#1e0010">（</span><span style="color:#111">在存活窗口期内</span><span style="color:#960050;background-color:#1e0010">）</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">!</span><span style="color:#111">isConnectionDead</span><span style="color:#111">(</span><span style="color:#111">poolEntry</span><span style="color:#111">.</span><span style="color:#75af00">connection</span><span style="color:#111">)</span>	<span style="color:#111">连接未死亡</span><span style="color:#960050;background-color:#1e0010">（</span><span style="color:#111">通过</span> <span style="color:#111">ping</span> <span style="color:#111">测试</span><span style="color:#960050;background-color:#1e0010">）</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">设计意图</span><span style="color:#960050;background-color:#1e0010">：</span><span style="color:#111">避免使用无效的连接</span><span style="color:#960050;background-color:#1e0010">（</span><span style="color:#111">已关闭</span><span style="color:#960050;background-color:#1e0010">、</span><span style="color:#111">超时</span><span style="color:#960050;background-color:#1e0010">、</span><span style="color:#111">断开等</span><span style="color:#960050;background-color:#1e0010">）。</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#111">5</span><span style="color:#111">.</span> <span style="color:#111">创建代理连接</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#111">java</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">Connection</span> <span style="color:#111">var10</span> <span style="color:#f92672">=</span> <span style="color:#111">poolEntry</span><span style="color:#111">.</span><span style="color:#75af00">createProxyConnection</span><span style="color:#111">(</span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">leakTaskFactory</span><span style="color:#111">.</span><span style="color:#75af00">schedule</span><span style="color:#111">(</span><span style="color:#111">poolEntry</span><span style="color:#111">));</span>
+</span></span></code></pre></div><p>检查逻辑：</p>
+<p>检查项	说明
+!poolEntry.isMarkedEvicted()	连接未被标记为驱逐
+elapsedMillis(&hellip;) &lt;= aliveBypassWindowMs	连接最近被访问过（在存活窗口期内）
+!isConnectionDead(poolEntry.connection)	连接未死亡（通过 ping 测试）
+设计意图：避免使用无效的连接（已关闭、超时、断开等）。</p>
+<ol start="5">
+<li>创建代理连接</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#111">Connection</span> <span style="color:#111">var10</span> <span style="color:#f92672">=</span> <span style="color:#111">poolEntry</span><span style="color:#111">.</span><span style="color:#75af00">createProxyConnection</span><span style="color:#111">(</span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">leakTaskFactory</span><span style="color:#111">.</span><span style="color:#75af00">schedule</span><span style="color:#111">(</span><span style="color:#111">poolEntry</span><span style="color:#111">));</span>
 </span></span><span style="display:flex;"><span><span style="color:#00a8c8">return</span> <span style="color:#111">var10</span><span style="color:#111">;</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">关键操作</span><span style="color:#960050;background-color:#1e0010">：</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#111">步骤</span>	<span style="color:#111">说明</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">leakTaskFactory</span><span style="color:#111">.</span><span style="color:#75af00">schedule</span><span style="color:#111">(</span><span style="color:#111">poolEntry</span><span style="color:#111">)</span>	<span style="color:#111">调度一个连接泄漏检测任务</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">poolEntry</span><span style="color:#111">.</span><span style="color:#75af00">createProxyConnection</span><span style="color:#111">(...)</span>	<span style="color:#111">创建代理连接对象</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">代理连接的作用</span><span style="color:#960050;background-color:#1e0010">：</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#111">拦截</span> <span style="color:#75af00">close</span><span style="color:#111">()</span> <span style="color:#111">方法</span><span style="color:#960050;background-color:#1e0010">，</span><span style="color:#111">实现连接归还而不是真正关闭</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">记录连接使用信息</span><span style="color:#960050;background-color:#1e0010">，</span><span style="color:#111">用于泄漏检测</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">6</span><span style="color:#111">.</span> <span style="color:#111">处理无效连接</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#111">java</span>
-</span></span><span style="display:flex;"><span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">closeConnection</span><span style="color:#111">(</span><span style="color:#111">poolEntry</span><span style="color:#111">,</span> <span style="color:#111">poolEntry</span><span style="color:#111">.</span><span style="color:#75af00">isMarkedEvicted</span><span style="color:#111">()</span> <span style="color:#f92672">?</span> <span style="color:#d88200">&#34;(connection was evicted)&#34;</span> <span style="color:#111">:</span> <span style="color:#d88200">&#34;(connection is dead)&#34;</span><span style="color:#111">);</span>
+</span></span></code></pre></div><p>关键操作：</p>
+<p>步骤	说明
+leakTaskFactory.schedule(poolEntry)	调度一个连接泄漏检测任务
+poolEntry.createProxyConnection(&hellip;)	创建代理连接对象
+代理连接的作用：</p>
+<p>拦截 close() 方法，实现连接归还而不是真正关闭
+记录连接使用信息，用于泄漏检测
+6. 处理无效连接</p>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">closeConnection</span><span style="color:#111">(</span><span style="color:#111">poolEntry</span><span style="color:#111">,</span> <span style="color:#111">poolEntry</span><span style="color:#111">.</span><span style="color:#75af00">isMarkedEvicted</span><span style="color:#111">()</span> <span style="color:#f92672">?</span> <span style="color:#d88200">&#34;(connection was evicted)&#34;</span> <span style="color:#111">:</span> <span style="color:#d88200">&#34;(connection is dead)&#34;</span><span style="color:#111">);</span>
 </span></span><span style="display:flex;"><span><span style="color:#111">timeout</span> <span style="color:#f92672">=</span> <span style="color:#111">hardTimeout</span> <span style="color:#f92672">-</span> <span style="color:#111">ClockSource</span><span style="color:#111">.</span><span style="color:#75af00">elapsedMillis</span><span style="color:#111">(</span><span style="color:#111">startTime</span><span style="color:#111">);</span>
 </span></span><span style="display:flex;"><span><span style="color:#00a8c8">if</span> <span style="color:#111">(</span><span style="color:#111">timeout</span> <span style="color:#f92672">&gt;</span> <span style="color:#111">0L</span><span style="color:#111">)</span> <span style="color:#111">{</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#00a8c8">continue</span><span style="color:#111">;</span> <span style="color:#75715e">// 继续尝试获取连接</span>
 </span></span><span style="display:flex;"><span><span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">逻辑</span><span style="color:#960050;background-color:#1e0010">：</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#111">如果连接无效</span><span style="color:#960050;background-color:#1e0010">，</span><span style="color:#111">关闭它并从池中移除</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">计算剩余超时时间</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">如果还有时间</span><span style="color:#960050;background-color:#1e0010">，</span><span style="color:#111">继续尝试获取连接</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">7</span><span style="color:#111">.</span> <span style="color:#111">超时处理</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#111">java</span>
-</span></span><span style="display:flex;"><span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">metricsTracker</span><span style="color:#111">.</span><span style="color:#75af00">recordBorrowTimeoutStats</span><span style="color:#111">(</span><span style="color:#111">startTime</span><span style="color:#111">);</span>
+</span></span></code></pre></div><p>逻辑：</p>
+<p>如果连接无效，关闭它并从池中移除
+计算剩余超时时间
+如果还有时间，继续尝试获取连接
+7. 超时处理</p>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">metricsTracker</span><span style="color:#111">.</span><span style="color:#75af00">recordBorrowTimeoutStats</span><span style="color:#111">(</span><span style="color:#111">startTime</span><span style="color:#111">);</span>
 </span></span><span style="display:flex;"><span><span style="color:#00a8c8">throw</span> <span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">createTimeoutException</span><span style="color:#111">(</span><span style="color:#111">startTime</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">作用</span><span style="color:#960050;background-color:#1e0010">：</span><span style="color:#111">记录超时统计信息并抛出超时异常</span><span style="color:#960050;background-color:#1e0010">。</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#111">8</span><span style="color:#111">.</span> <span style="color:#111">异常处理</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#111">java</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">}</span> <span style="color:#00a8c8">catch</span> <span style="color:#111">(</span><span style="color:#111">InterruptedException</span> <span style="color:#111">var14</span><span style="color:#111">)</span> <span style="color:#111">{</span>
+</span></span></code></pre></div><p>作用：记录超时统计信息并抛出超时异常。</p>
+<ol start="8">
+<li>异常处理</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#111">}</span> <span style="color:#00a8c8">catch</span> <span style="color:#111">(</span><span style="color:#111">InterruptedException</span> <span style="color:#111">var14</span><span style="color:#111">)</span> <span style="color:#111">{</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#111">Thread</span><span style="color:#111">.</span><span style="color:#75af00">currentThread</span><span style="color:#111">().</span><span style="color:#75af00">interrupt</span><span style="color:#111">();</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#00a8c8">throw</span> <span style="color:#00a8c8">new</span> <span style="color:#111">SQLException</span><span style="color:#111">(</span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">poolName</span> <span style="color:#f92672">+</span> <span style="color:#d88200">&#34; - Interrupted during connection acquisition&#34;</span><span style="color:#111">,</span> <span style="color:#111">e</span><span style="color:#111">);</span>
 </span></span><span style="display:flex;"><span><span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">处理中断</span><span style="color:#960050;background-color:#1e0010">：</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#111">恢复线程的中断状态</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">抛出</span> <span style="color:#111">SQLException</span> <span style="color:#111">异常</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">9</span><span style="color:#111">.</span> <span style="color:#111">释放锁</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#111">java</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">}</span> <span style="color:#00a8c8">finally</span> <span style="color:#111">{</span>
+</span></span></code></pre></div><p>处理中断：</p>
+<p>恢复线程的中断状态
+抛出 SQLException 异常
+9. 释放锁</p>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#111">}</span> <span style="color:#00a8c8">finally</span> <span style="color:#111">{</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">suspendResumeLock</span><span style="color:#111">.</span><span style="color:#75af00">release</span><span style="color:#111">();</span>
 </span></span><span style="display:flex;"><span><span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">确保锁被释放</span><span style="color:#960050;background-color:#1e0010">：</span><span style="color:#111">无论是否成功获取连接</span><span style="color:#960050;background-color:#1e0010">，</span><span style="color:#111">都要释放挂起</span><span style="color:#f92672">/</span><span style="color:#111">恢复锁</span><span style="color:#960050;background-color:#1e0010">。</span>
+</span></span></code></pre></div><p>确保锁被释放：无论是否成功获取连接，都要释放挂起/恢复锁。</p>
+<p>三、核心数据结构
+PoolEntry —— 连接条目</p>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#00a8c8">public</span> <span style="color:#00a8c8">class</span> <span style="color:#75af00">PoolEntry</span> <span style="color:#111">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#00a8c8">private</span> <span style="color:#00a8c8">final</span> <span style="color:#111">Connection</span> <span style="color:#111">connection</span><span style="color:#111">;</span> <span style="color:#75715e">// 真正的 JDBC 连接</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#00a8c8">private</span> <span style="color:#00a8c8">volatile</span> <span style="color:#00a8c8">long</span> <span style="color:#111">lastAccessed</span><span style="color:#111">;</span>  <span style="color:#75715e">// 最后访问时间</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#00a8c8">private</span> <span style="color:#00a8c8">volatile</span> <span style="color:#00a8c8">boolean</span> <span style="color:#111">evicted</span><span style="color:#111">;</span>    <span style="color:#75715e">// 是否被驱逐</span>
 </span></span><span style="display:flex;"><span>    
-</span></span><span style="display:flex;"><span>    
-</span></span></code></pre></div><pre tabindex="0"><code>三、核心数据结构
-PoolEntry —— 连接条目
-
-java
-public class PoolEntry {
-    private final Connection connection; // 真正的 JDBC 连接
-    private volatile long lastAccessed;  // 最后访问时间
-    private volatile boolean evicted;    // 是否被驱逐
-    
-    public Connection createProxyConnection(LeakTask leakTask) {
-        // 创建代理连接
-    }
-}
-connectionBag —— 连接袋
-HikariCP 使用一个高效的数据结构管理连接，支持快速的借用和归还操作。
-
-四、流程图
-
-plainText
-getConnection(hardTimeout)
-       ↓
-acquire suspendResumeLock
-       ↓
-record startTime
-       ↓
-┌─────────────────────────┐
-│      while(true)        │
-│    borrow connection    │←┐
-│      from connectionBag │ │
-└───────────┬─────────────┘ │
-            ↓               │
-    poolEntry != null?      │
-            ↓               │
-       检查连接有效性        │
-            ↓               │
-       有效?                │
-      ↓      ↓             │
-    是      否              │
-    ↓        ↓             │
- 创建代理   关闭连接         │
-    ↓      更新超时         │
- 返回连接  continue ←───────┘
-            ↓
-   timeout &lt;= 0?
-            ↓
-       抛出超时异常
-            ↓
-release suspendResumeLock
-</code></pre>
+</span></span><span style="display:flex;"><span>    <span style="color:#00a8c8">public</span> <span style="color:#111">Connection</span> <span style="color:#75af00">createProxyConnection</span><span style="color:#111">(</span><span style="color:#111">LeakTask</span> <span style="color:#111">leakTask</span><span style="color:#111">)</span> <span style="color:#111">{</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// 创建代理连接</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#111">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#111">}</span>
+</span></span></code></pre></div><p>connectionBag —— 连接袋
+HikariCP 使用一个高效的数据结构管理连接，支持快速的借用和归还操作。</p>
+<p>四、流程图</p>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>getConnection(hardTimeout)
+</span></span><span style="display:flex;"><span>       ↓
+</span></span><span style="display:flex;"><span>acquire suspendResumeLock
+</span></span><span style="display:flex;"><span>       ↓
+</span></span><span style="display:flex;"><span>record startTime
+</span></span><span style="display:flex;"><span>       ↓
+</span></span><span style="display:flex;"><span>┌─────────────────────────┐
+</span></span><span style="display:flex;"><span>│      while(true)        │
+</span></span><span style="display:flex;"><span>│    borrow connection    │←┐
+</span></span><span style="display:flex;"><span>│      from connectionBag │ │
+</span></span><span style="display:flex;"><span>└───────────┬─────────────┘ │
+</span></span><span style="display:flex;"><span>            ↓               │
+</span></span><span style="display:flex;"><span>    poolEntry != null?      │
+</span></span><span style="display:flex;"><span>            ↓               │
+</span></span><span style="display:flex;"><span>       检查连接有效性        │
+</span></span><span style="display:flex;"><span>            ↓               │
+</span></span><span style="display:flex;"><span>       有效?                │
+</span></span><span style="display:flex;"><span>      ↓      ↓             │
+</span></span><span style="display:flex;"><span>    是      否              │
+</span></span><span style="display:flex;"><span>    ↓        ↓             │
+</span></span><span style="display:flex;"><span> 创建代理   关闭连接         │
+</span></span><span style="display:flex;"><span>    ↓      更新超时         │
+</span></span><span style="display:flex;"><span> 返回连接  continue ←───────┘
+</span></span><span style="display:flex;"><span>            ↓
+</span></span><span style="display:flex;"><span>   timeout &lt;= 0?
+</span></span><span style="display:flex;"><span>            ↓
+</span></span><span style="display:flex;"><span>       抛出超时异常
+</span></span><span style="display:flex;"><span>            ↓
+</span></span><span style="display:flex;"><span>release suspendResumeLock
+</span></span></code></pre></div>
   </div>
 
   <footer class="article-footer">
