@@ -22,16 +22,6 @@
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url><url>
-    <loc>https://kelp-z.github.io/categories/java-%E5%90%8E%E7%AB%AF/</loc>
-    <lastmod>2026-09-07T00:00:00+00:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url><url>
-    <loc>https://kelp-z.github.io/categories/java-%E5%9F%BA%E7%A1%80/</loc>
-    <lastmod>2026-09-07T00:00:00+00:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url><url>
     <loc>https://kelp-z.github.io/posts/objectmapper/</loc>
     <lastmod>2026-09-07T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
@@ -63,6 +53,11 @@
     <priority>0.5</priority>
   </url><url>
     <loc>https://kelp-z.github.io/categories/</loc>
+    <lastmod>2026-09-07T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url><url>
+    <loc>https://kelp-z.github.io/categories/%E6%8A%80%E6%9C%AF/</loc>
     <lastmod>2026-09-07T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
