@@ -7,6 +7,11 @@
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url><url>
+    <loc>https://kelp-z.github.io/categories/</loc>
+    <lastmod>2026-09-07T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url><url>
     <loc>https://kelp-z.github.io/posts/hicari/</loc>
     <lastmod>2026-09-07T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
@@ -18,6 +23,16 @@
     <priority>0.5</priority>
   </url><url>
     <loc>https://kelp-z.github.io/tags/java/</loc>
+    <lastmod>2026-09-07T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url><url>
+    <loc>https://kelp-z.github.io/categories/java-%E5%90%8E%E7%AB%AF/</loc>
+    <lastmod>2026-09-07T00:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url><url>
+    <loc>https://kelp-z.github.io/categories/java-%E5%9F%BA%E7%A1%80/</loc>
     <lastmod>2026-09-07T00:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
@@ -69,10 +84,6 @@
   </url><url>
     <loc>https://kelp-z.github.io/about/</loc>
     <lastmod>2024-01-01T00:00:00+00:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url><url>
-    <loc>https://kelp-z.github.io/categories/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url><url>
