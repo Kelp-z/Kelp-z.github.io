@@ -10,7 +10,7 @@
 <meta name="description" content="记录学习、思考与生活。">
 <meta name="author" content="Your Name">
 <link rel="canonical" href="https://kelp-z.github.io/tags/spring/">
-<link crossorigin="anonymous" href="/assets/css/stylesheet.cd9298b33628769aa1bc1acebbbfd7aa11ce81dfe03484d479e1907760249a1d.css" integrity="sha256-zZKYszYodpqhvBrOu7/XqhHOgd/gNITUeeGQd2Akmh0=" rel="preload stylesheet" as="style">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.6719049ef83141cbcecd2de778b6643b0bc178a539084df99e7fadbd72b388aa.css" integrity="sha256-ZxkEnvgxQcvOzS3neLZkOwvBeKU5CE35nn&#43;tvXKziKo=" rel="preload stylesheet" as="style">
 <link rel="icon" href="https://kelp-z.github.io/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="https://kelp-z.github.io/favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="https://kelp-z.github.io/favicon-32x32.png">
@@ -64,7 +64,8 @@
         document.querySelector("html").dataset.theme = 'light';
     }
 
-</script><meta property="og:url" content="https://kelp-z.github.io/tags/spring/">
+</script><link rel="stylesheet" href="/css/extended/custom.min.20210ab6dd1c11b0f974a1e9198da6accbd2d4a8d225c0fc35d98842413eab4a.css" integrity="sha256-ICEKtt0cEbD5dKHpGY2mrMvS1KjSJcD8NdmIQkE&#43;q0o=">
+<meta property="og:url" content="https://kelp-z.github.io/tags/spring/">
   <meta property="og:site_name" content="我的笔记">
   <meta property="og:title" content="Spring">
   <meta property="og:description" content="记录学习、思考与生活。">
@@ -186,7 +187,22 @@ RestTemplate 的作用和用途 1. 调用外部 API 发送 HTTP 请求到外部 
         <polyline points="17 11 12 6 7 11"></polyline>
         <polyline points="17 18 12 13 7 18"></polyline>
     </svg>
-</a>
+</a><script>
+    document.addEventListener("click", function (event) {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+        const target = event.target.closest("a, button");
+        if (!target) return;
+
+        const ripple = document.createElement("span");
+        ripple.className = "click-ripple";
+        ripple.style.left = `${event.clientX}px`;
+        ripple.style.top = `${event.clientY}px`;
+        document.body.appendChild(ripple);
+        ripple.addEventListener("animationend", () => ripple.remove(), { once: true });
+    });
+</script>
+
 
 <script>
     let menu = document.getElementById('menu');
