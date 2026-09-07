@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto" data-theme="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Java 后端 | 我的笔记</title>
+<meta name="keywords" content="">
+<meta name="description" content="记录学习、思考与生活。">
+<meta name="author" content="Your Name">
+<link rel="canonical" href="https://kelp-z.github.io/categories/java-%E5%90%8E%E7%AB%AF/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.cd9298b33628769aa1bc1acebbbfd7aa11ce81dfe03484d479e1907760249a1d.css" integrity="sha256-zZKYszYodpqhvBrOu7/XqhHOgd/gNITUeeGQd2Akmh0=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://kelp-z.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://kelp-z.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://kelp-z.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://kelp-z.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://kelp-z.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://kelp-z.github.io/categories/java-%E5%90%8E%E7%AB%AF/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script><meta property="og:url" content="https://kelp-z.github.io/categories/java-%E5%90%8E%E7%AB%AF/">
+  <meta property="og:site_name" content="我的笔记">
+  <meta property="og:title" content="Java 后端">
+  <meta property="og:description" content="记录学习、思考与生活。">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="website">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Java 后端">
+  <meta name="twitter:description" content="记录学习、思考与生活。">
+
+</head>
+<body class="list" id="top">
+    <header class="header">
+    <nav class="header-nav">
+        <div class="logo">
+            <a href="https://kelp-z.github.io/" accesskey="h" title="我的笔记 (Alt + H)">我的笔记</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg class="sun" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu" class="menu">
+            <li>
+                <a href="https://kelp-z.github.io/posts/" title="文章">
+                    <span>文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/categories/" title="分类">
+                    <span>分类</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/archive/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/about/" title="关于">
+                    <span>关于</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main"> 
+<header class="page-header"><nav class="breadcrumbs" role="navigation" aria-label="Breadcrumb">
+            <a href="/">主页</a>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right">
+                <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+            <a href="/categories/">Categories</a>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right">
+        <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+</nav>
+  <h1>
+    Java 后端
+  </h1>
+</header>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Hikari 部分源码分析
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>
+1.private static final Logger LOGGER
+**作用**：日志记录器，用于记录连接池的运行日志。 private final AtomicBoolean isShutdown
+作用：原子布尔值，标记连接池是否已关闭。
+private final HikariPool fastPathPool
+​	作用：快速路径池，用于优化热点路径的性能。
+private volatile HikariPool pool ​	作用：主连接池引用，支持运行时动态替换。
+public Connection getConnection() throws SQLException { // 1. 检查连接池是否已关闭 if (this.isClosed()) { throw new SQLException(&#34;HikariDataSource &#34; &#43; this &#43; &#34; has been closed.&#34;); } // 2. 快速路径：如果快速池存在，直接获取 else if (this.fastPathPool != null) { return this.fastPathPool.getConnection(); } // 3. 慢路径：双重检查锁定初始化连接池 else { HikariPool result = this.pool; if (result == null) { synchronized(this) { result = this.pool; if (result == null) { // 初始化连接池 this.pool = result = new HikariPool(this); this.seal(); } } } return result.getConnection(); } } public Connection getConnection(long hardTimeout) throws SQLException { this.suspendResumeLock.acquire(); long startTime = ClockSource.currentTime(); try { long timeout = hardTimeout; while(true) { PoolEntry poolEntry = (PoolEntry)this.connectionBag.borrow(timeout, TimeUnit.MILLISECONDS); if (poolEntry != null) { long now = ClockSource.currentTime(); if (!poolEntry.isMarkedEvicted() &amp;&amp; (ClockSource.elapsedMillis(poolEntry.lastAccessed, now) &lt;= this.aliveBypassWindowMs || !this.isConnectionDead(poolEntry.connection))) { this.metricsTracker.recordBorrowStats(poolEntry, startTime); Connection var10 = poolEntry.createProxyConnection(this.leakTaskFactory.schedule(poolEntry)); return var10; } this.closeConnection(poolEntry, poolEntry.isMarkedEvicted() ? &#34;(connection was evicted)&#34; : &#34;(connection is dead)&#34;); timeout = hardTimeout - ClockSource.elapsedMillis(startTime); if (timeout &gt; 0L) { continue; } } this.metricsTracker.recordBorrowTimeoutStats(startTime); throw this.createTimeoutException(startTime); } } catch (InterruptedException var14) { InterruptedException e = var14; Thread.currentThread().interrupt(); throw new SQLException(this.poolName &#43; &#34; - Interrupted during connection acquisition&#34;, e); } finally { this.suspendResumeLock.release(); } } 获取挂起/恢复锁 this.suspendResumeLock.acquire(); 作用：获取一个锁，用于控制连接池的挂起/恢复操作。
+...</p>
+  </div>
+  <footer class="entry-footer">
+
+<span title='2026-09-07 00:00:00 +0000 UTC'>2026年9月7日</span>&nbsp;·&nbsp;<span>3 分钟</span>&nbsp;·&nbsp;<span>Your Name</span></footer>
+  <a class="entry-link" aria-label="post link to Hikari 部分源码分析" href="https://kelp-z.github.io/posts/hicari/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">ObjectMapper
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>ObjectMapper 什么是 ObjectMapper ObjectMapper 是 Jackson 库中的核心类，用于处理 Java 对象与 JSON 数据之间的相互转换。它是一个功能强大的工具，能够：
+将 Java 对象序列化为 JSON 字符串 将 JSON 字符串反序列化为 Java 对象 处理 JSON 数据的解析和生成 ObjectMapper 的作用和用途 1. REST API 处理 自动将控制器方法的返回值转换为 JSON 响应 自动将 HTTP 请求体的 JSON 数据转换为 Java 对象 2. 第三方 API 交互 解析外部 API 返回的 JSON 响应（如我们项目中与企查查 API 的交互） 生成发送给外部 API 的 JSON 请求数据 3. 数据持久化 将 Java 对象转换为 JSON 格式存储 从 JSON 格式加载数据并转换为 Java 对象 4. 配置文件处理 解析 JSON 格式的配置文件 ObjectMapperConfig 的作用 在我们的项目中，ObjectMapperConfig 类的作用是：
+...</p>
+  </div>
+  <footer class="entry-footer">
+
+<span title='2026-09-07 00:00:00 +0000 UTC'>2026年9月7日</span>&nbsp;·&nbsp;<span>1 分钟</span>&nbsp;·&nbsp;<span>Your Name</span></footer>
+  <a class="entry-link" aria-label="post link to ObjectMapper" href="https://kelp-z.github.io/posts/objectmapper/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">RestTemplate 详解
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>RestTemplate 详解 什么是 RestTemplate RestTemplate 是 Spring 框架中用于发送 HTTP 请求的核心类，它提供了一种简洁、优雅的方式来与 RESTful API 进行交互。RestTemplate 封装了底层的 HTTP 客户端实现，提供了一系列方法来发送不同类型的 HTTP 请求（如 GET、POST、PUT、DELETE 等）。
+RestTemplate 的作用和用途 1. 调用外部 API 发送 HTTP 请求到外部 API 并获取响应 支持各种 HTTP 方法（GET、POST、PUT、DELETE 等） 自动处理请求和响应的序列化与反序列化 2. 微服务间通信 在微服务架构中，不同服务之间通过 HTTP 进行通信 RestTemplate 提供了一种统一的方式来调用其他服务的 API 3. 简化 HTTP 客户端代码 封装了底层的 HTTP 客户端实现，如 Apache HttpClient、OkHttp 等 提供了简洁的 API，避免了手动处理 HTTP 请求的复杂性 4. 支持多种数据格式 支持 JSON、XML 等多种数据格式的转换 自动处理请求体和响应体的序列化与反序列化 RestTemplateConfig 的作用 在我们的项目中，RestTemplateConfig 类的作用是：
+创建并配置 RestTemplate 实例：通过 @Bean 注解将 RestTemplate 注册为 Spring 容器中的一个 Bean，使其可以被其他组件注入和使用。
+...</p>
+  </div>
+  <footer class="entry-footer">
+
+<span title='2026-09-07 00:00:00 +0000 UTC'>2026年9月7日</span>&nbsp;·&nbsp;<span>1 分钟</span>&nbsp;·&nbsp;<span>Your Name</span></footer>
+  <a class="entry-link" aria-label="post link to RestTemplate 详解" href="https://kelp-z.github.io/posts/resttemplate/"></a>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="https://kelp-z.github.io/">我的笔记</a></span> · 
+
+    
+    
+    <span>
+        Powered by
+        <a href="https://gohugo.io/?utm_source=papermod" rel="noopener" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" id="top-link" class="top-link hidden" aria-label="go to top" title="Go to Top (Alt + G)" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-up">
+        <polyline points="17 11 12 6 7 11"></polyline>
+        <polyline points="17 18 12 13 7 18"></polyline>
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var toplink = document.getElementById("top-link");
+    window.onscroll = function () {
+        const scrollThreshold = window.innerHeight;
+        if (document.body.scrollTop > scrollThreshold || document.documentElement.scrollTop > scrollThreshold) {
+            toplink.classList.remove("hidden");
+        } else {
+            toplink.classList.add("hidden");
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>
