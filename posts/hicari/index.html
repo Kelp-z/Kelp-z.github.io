@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <meta name="robots" content="index, follow">
-<title>Hikari 部分源码分析 | 我的笔记</title>
+<title>Hikari 部分源码分析 | Kelp&#39;s Blog</title>
 <meta name="keywords" content="Java, 数据库连接池">
 <meta name="description" content="
 1.private static final Logger LOGGER
@@ -90,9 +90,9 @@ public Connection getConnection() throws SQLException {
 
 this.suspendResumeLock.acquire();
 作用：获取一个锁，用于控制连接池的挂起/恢复操作。">
-<meta name="author" content="Your Name">
+<meta name="author" content="Kelp">
 <link rel="canonical" href="https://kelp-z.github.io/posts/hicari/">
-<link crossorigin="anonymous" href="/assets/css/stylesheet.6719049ef83141cbcecd2de778b6643b0bc178a539084df99e7fadbd72b388aa.css" integrity="sha256-ZxkEnvgxQcvOzS3neLZkOwvBeKU5CE35nn&#43;tvXKziKo=" rel="preload stylesheet" as="style">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.a2bd0141436a89bde36ca893662caeedd75dc8ccf9dd0e1c0c940b3121bc3fd2.css" integrity="sha256-or0BQUNqib3jbKiTZiyu7dddyMz53Q4cDJQLMSG8P9I=" rel="preload stylesheet" as="style">
 <link rel="icon" href="https://kelp-z.github.io/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="https://kelp-z.github.io/favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="https://kelp-z.github.io/favicon-32x32.png">
@@ -146,9 +146,9 @@ this.suspendResumeLock.acquire();
         document.querySelector("html").dataset.theme = 'light';
     }
 
-</script><link rel="stylesheet" href="/css/extended/custom.min.20210ab6dd1c11b0f974a1e9198da6accbd2d4a8d225c0fc35d98842413eab4a.css" integrity="sha256-ICEKtt0cEbD5dKHpGY2mrMvS1KjSJcD8NdmIQkE&#43;q0o=">
+</script><link rel="stylesheet" href="/css/extended/custom.min.0b968ab02a9bd39dd62c1c69a2d435c18de8e16d713aa6707ff665bc389a7644.css" integrity="sha256-C5aKsCqb053WLBxpotQ1wY3o4W1xOqZwf/ZlvDiadkQ=">
 <meta property="og:url" content="https://kelp-z.github.io/posts/hicari/">
-  <meta property="og:site_name" content="我的笔记">
+  <meta property="og:site_name" content="Kelp&#39;s Blog">
   <meta property="og:title" content="Hikari 部分源码分析">
   <meta property="og:description" content="1.private static final Logger LOGGER
 **作用**：日志记录器，用于记录连接池的运行日志。 private final AtomicBoolean isShutdown
@@ -213,7 +213,7 @@ public Connection getConnection() throws SQLException { // 1. 检查连接池是
   "dateModified": "2026-09-07T00:00:00Z",
   "author":{
     "@type": "Person",
-    "name": "Your Name"
+    "name": "Kelp"
   },
   "mainEntityOfPage": {
     "@type": "WebPage",
@@ -221,7 +221,7 @@ public Connection getConnection() throws SQLException { // 1. 检查连接池是
   },
   "publisher": {
     "@type": "Organization",
-    "name": "我的笔记",
+    "name": "Kelp's Blog",
     "logo": {
       "@type": "ImageObject",
       "url": "https://kelp-z.github.io/favicon.ico"
@@ -234,7 +234,10 @@ public Connection getConnection() throws SQLException { // 1. 检查连接池是
     <header class="header">
     <nav class="header-nav">
         <div class="logo">
-            <a href="https://kelp-z.github.io/" accesskey="h" title="我的笔记 (Alt + H)">我的笔记</a>
+            <a href="https://kelp-z.github.io/" accesskey="h" title="Kelp&#39;s Blog (Alt + H)">
+                        
+                    <img src="https://kelp-z.github.io/images/jerry-avatar_hu_6a3ecb67e03d750e.png" alt="" aria-label="logo"
+                        height="42">Kelp&#39;s Blog</a>
             <div class="logo-switches">
                 <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
                     <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
@@ -308,7 +311,7 @@ public Connection getConnection() throws SQLException { // 1. 检查连接池是
     </h1>
     <div class="post-meta">
 
-<span title='2026-09-07 00:00:00 +0000 UTC'>2026年9月7日</span>&nbsp;·&nbsp;<span>3 分钟</span>&nbsp;·&nbsp;<span>Your Name</span>
+<span title='2026-09-07 00:00:00 +0000 UTC'>2026年9月7日</span>&nbsp;·&nbsp;<span>3 分钟</span>&nbsp;·&nbsp;<span>Kelp</span>
 
 </div>
   </header> 
@@ -331,102 +334,102 @@ public Connection getConnection() throws SQLException { // 1. 检查连接池是
 <li><code>private volatile HikariPool pool</code></li>
 </ol>
 <p>​	<strong>作用</strong>：<strong>主连接池引用</strong>，支持运行时动态替换。</p>
-<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#00a8c8">public</span> <span style="color:#111">Connection</span> <span style="color:#75af00">getConnection</span><span style="color:#111">()</span> <span style="color:#00a8c8">throws</span> <span style="color:#111">SQLException</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// 1. 检查连接池是否已关闭</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#00a8c8">if</span> <span style="color:#111">(</span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">isClosed</span><span style="color:#111">())</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#00a8c8">throw</span> <span style="color:#00a8c8">new</span> <span style="color:#111">SQLException</span><span style="color:#111">(</span><span style="color:#d88200">&#34;HikariDataSource &#34;</span> <span style="color:#f92672">+</span> <span style="color:#00a8c8">this</span> <span style="color:#f92672">+</span> <span style="color:#d88200">&#34; has been closed.&#34;</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#111">}</span> 
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// 2. 快速路径：如果快速池存在，直接获取</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#00a8c8">else</span> <span style="color:#00a8c8">if</span> <span style="color:#111">(</span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">fastPathPool</span> <span style="color:#f92672">!=</span> <span style="color:#00a8c8">null</span><span style="color:#111">)</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#00a8c8">return</span> <span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">fastPathPool</span><span style="color:#111">.</span><span style="color:#75af00">getConnection</span><span style="color:#111">();</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#111">}</span> 
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// 3. 慢路径：双重检查锁定初始化连接池</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#00a8c8">else</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#111">HikariPool</span> <span style="color:#111">result</span> <span style="color:#f92672">=</span> <span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">pool</span><span style="color:#111">;</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#00a8c8">if</span> <span style="color:#111">(</span><span style="color:#111">result</span> <span style="color:#f92672">==</span> <span style="color:#00a8c8">null</span><span style="color:#111">)</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#00a8c8">synchronized</span><span style="color:#111">(</span><span style="color:#00a8c8">this</span><span style="color:#111">)</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>                <span style="color:#111">result</span> <span style="color:#f92672">=</span> <span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">pool</span><span style="color:#111">;</span>
-</span></span><span style="display:flex;"><span>                <span style="color:#00a8c8">if</span> <span style="color:#111">(</span><span style="color:#111">result</span> <span style="color:#f92672">==</span> <span style="color:#00a8c8">null</span><span style="color:#111">)</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>                    <span style="color:#75715e">// 初始化连接池</span>
-</span></span><span style="display:flex;"><span>                    <span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">pool</span> <span style="color:#f92672">=</span> <span style="color:#111">result</span> <span style="color:#f92672">=</span> <span style="color:#00a8c8">new</span> <span style="color:#111">HikariPool</span><span style="color:#111">(</span><span style="color:#00a8c8">this</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span>                    <span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">seal</span><span style="color:#111">();</span>
-</span></span><span style="display:flex;"><span>                <span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#00a8c8">return</span> <span style="color:#111">result</span><span style="color:#111">.</span><span style="color:#75af00">getConnection</span><span style="color:#111">();</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">}</span>
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span> <span style="color:#00a8c8">public</span> <span style="color:#111">Connection</span> <span style="color:#75af00">getConnection</span><span style="color:#111">(</span><span style="color:#00a8c8">long</span> <span style="color:#111">hardTimeout</span><span style="color:#111">)</span> <span style="color:#00a8c8">throws</span> <span style="color:#111">SQLException</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">suspendResumeLock</span><span style="color:#111">.</span><span style="color:#75af00">acquire</span><span style="color:#111">();</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#00a8c8">long</span> <span style="color:#111">startTime</span> <span style="color:#f92672">=</span> <span style="color:#111">ClockSource</span><span style="color:#111">.</span><span style="color:#75af00">currentTime</span><span style="color:#111">();</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>        <span style="color:#00a8c8">try</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#00a8c8">long</span> <span style="color:#111">timeout</span> <span style="color:#f92672">=</span> <span style="color:#111">hardTimeout</span><span style="color:#111">;</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>            <span style="color:#00a8c8">while</span><span style="color:#111">(</span><span style="color:#00a8c8">true</span><span style="color:#111">)</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>                <span style="color:#111">PoolEntry</span> <span style="color:#111">poolEntry</span> <span style="color:#f92672">=</span> <span style="color:#111">(</span><span style="color:#111">PoolEntry</span><span style="color:#111">)</span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">connectionBag</span><span style="color:#111">.</span><span style="color:#75af00">borrow</span><span style="color:#111">(</span><span style="color:#111">timeout</span><span style="color:#111">,</span> <span style="color:#111">TimeUnit</span><span style="color:#111">.</span><span style="color:#75af00">MILLISECONDS</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span>                <span style="color:#00a8c8">if</span> <span style="color:#111">(</span><span style="color:#111">poolEntry</span> <span style="color:#f92672">!=</span> <span style="color:#00a8c8">null</span><span style="color:#111">)</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>                    <span style="color:#00a8c8">long</span> <span style="color:#111">now</span> <span style="color:#f92672">=</span> <span style="color:#111">ClockSource</span><span style="color:#111">.</span><span style="color:#75af00">currentTime</span><span style="color:#111">();</span>
-</span></span><span style="display:flex;"><span>                    <span style="color:#00a8c8">if</span> <span style="color:#111">(</span><span style="color:#f92672">!</span><span style="color:#111">poolEntry</span><span style="color:#111">.</span><span style="color:#75af00">isMarkedEvicted</span><span style="color:#111">()</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#111">(</span><span style="color:#111">ClockSource</span><span style="color:#111">.</span><span style="color:#75af00">elapsedMillis</span><span style="color:#111">(</span><span style="color:#111">poolEntry</span><span style="color:#111">.</span><span style="color:#75af00">lastAccessed</span><span style="color:#111">,</span> <span style="color:#111">now</span><span style="color:#111">)</span> <span style="color:#f92672">&lt;=</span> <span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">aliveBypassWindowMs</span> <span style="color:#f92672">||</span> <span style="color:#f92672">!</span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">isConnectionDead</span><span style="color:#111">(</span><span style="color:#111">poolEntry</span><span style="color:#111">.</span><span style="color:#75af00">connection</span><span style="color:#111">)))</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>                        <span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">metricsTracker</span><span style="color:#111">.</span><span style="color:#75af00">recordBorrowStats</span><span style="color:#111">(</span><span style="color:#111">poolEntry</span><span style="color:#111">,</span> <span style="color:#111">startTime</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span>                        <span style="color:#111">Connection</span> <span style="color:#111">var10</span> <span style="color:#f92672">=</span> <span style="color:#111">poolEntry</span><span style="color:#111">.</span><span style="color:#75af00">createProxyConnection</span><span style="color:#111">(</span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">leakTaskFactory</span><span style="color:#111">.</span><span style="color:#75af00">schedule</span><span style="color:#111">(</span><span style="color:#111">poolEntry</span><span style="color:#111">));</span>
-</span></span><span style="display:flex;"><span>                        <span style="color:#00a8c8">return</span> <span style="color:#111">var10</span><span style="color:#111">;</span>
-</span></span><span style="display:flex;"><span>                    <span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>                    <span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">closeConnection</span><span style="color:#111">(</span><span style="color:#111">poolEntry</span><span style="color:#111">,</span> <span style="color:#111">poolEntry</span><span style="color:#111">.</span><span style="color:#75af00">isMarkedEvicted</span><span style="color:#111">()</span> <span style="color:#f92672">?</span> <span style="color:#d88200">&#34;(connection was evicted)&#34;</span> <span style="color:#111">:</span> <span style="color:#d88200">&#34;(connection is dead)&#34;</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span>                    <span style="color:#111">timeout</span> <span style="color:#f92672">=</span> <span style="color:#111">hardTimeout</span> <span style="color:#f92672">-</span> <span style="color:#111">ClockSource</span><span style="color:#111">.</span><span style="color:#75af00">elapsedMillis</span><span style="color:#111">(</span><span style="color:#111">startTime</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span>                    <span style="color:#00a8c8">if</span> <span style="color:#111">(</span><span style="color:#111">timeout</span> <span style="color:#f92672">&gt;</span> <span style="color:#111">0L</span><span style="color:#111">)</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>                        <span style="color:#00a8c8">continue</span><span style="color:#111">;</span>
-</span></span><span style="display:flex;"><span>                    <span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span>                <span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>                <span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">metricsTracker</span><span style="color:#111">.</span><span style="color:#75af00">recordBorrowTimeoutStats</span><span style="color:#111">(</span><span style="color:#111">startTime</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span>                <span style="color:#00a8c8">throw</span> <span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">createTimeoutException</span><span style="color:#111">(</span><span style="color:#111">startTime</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#111">}</span> <span style="color:#00a8c8">catch</span> <span style="color:#111">(</span><span style="color:#111">InterruptedException</span> <span style="color:#111">var14</span><span style="color:#111">)</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#111">InterruptedException</span> <span style="color:#111">e</span> <span style="color:#f92672">=</span> <span style="color:#111">var14</span><span style="color:#111">;</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#111">Thread</span><span style="color:#111">.</span><span style="color:#75af00">currentThread</span><span style="color:#111">().</span><span style="color:#75af00">interrupt</span><span style="color:#111">();</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#00a8c8">throw</span> <span style="color:#00a8c8">new</span> <span style="color:#111">SQLException</span><span style="color:#111">(</span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">poolName</span> <span style="color:#f92672">+</span> <span style="color:#d88200">&#34; - Interrupted during connection acquisition&#34;</span><span style="color:#111">,</span> <span style="color:#111">e</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#111">}</span> <span style="color:#00a8c8">finally</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">suspendResumeLock</span><span style="color:#111">.</span><span style="color:#75af00">release</span><span style="color:#111">();</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">}</span>
-</span></span></code></pre></div><ol>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">Connection</span><span class="w"> </span><span class="nf">getConnection</span><span class="p">()</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">SQLException</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 1. 检查连接池是否已关闭</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="na">isClosed</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SQLException</span><span class="p">(</span><span class="s">&#34;HikariDataSource &#34;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="k">this</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&#34; has been closed.&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 2. 快速路径：如果快速池存在，直接获取</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="na">fastPathPool</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">fastPathPool</span><span class="p">.</span><span class="na">getConnection</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 3. 慢路径：双重检查锁定初始化连接池</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">HikariPool</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">pool</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="kd">synchronized</span><span class="p">(</span><span class="k">this</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">pool</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="c1">// 初始化连接池</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="k">this</span><span class="p">.</span><span class="na">pool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">HikariPool</span><span class="p">(</span><span class="k">this</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="k">this</span><span class="p">.</span><span class="na">seal</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">result</span><span class="p">.</span><span class="na">getConnection</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="w"> </span><span class="kd">public</span><span class="w"> </span><span class="n">Connection</span><span class="w"> </span><span class="nf">getConnection</span><span class="p">(</span><span class="kt">long</span><span class="w"> </span><span class="n">hardTimeout</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">SQLException</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">suspendResumeLock</span><span class="p">.</span><span class="na">acquire</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kt">long</span><span class="w"> </span><span class="n">startTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ClockSource</span><span class="p">.</span><span class="na">currentTime</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="kt">long</span><span class="w"> </span><span class="n">timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hardTimeout</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">while</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">PoolEntry</span><span class="w"> </span><span class="n">poolEntry</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">PoolEntry</span><span class="p">)</span><span class="k">this</span><span class="p">.</span><span class="na">connectionBag</span><span class="p">.</span><span class="na">borrow</span><span class="p">(</span><span class="n">timeout</span><span class="p">,</span><span class="w"> </span><span class="n">TimeUnit</span><span class="p">.</span><span class="na">MILLISECONDS</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">poolEntry</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="kt">long</span><span class="w"> </span><span class="n">now</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ClockSource</span><span class="p">.</span><span class="na">currentTime</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">poolEntry</span><span class="p">.</span><span class="na">isMarkedEvicted</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="p">(</span><span class="n">ClockSource</span><span class="p">.</span><span class="na">elapsedMillis</span><span class="p">(</span><span class="n">poolEntry</span><span class="p">.</span><span class="na">lastAccessed</span><span class="p">,</span><span class="w"> </span><span class="n">now</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">aliveBypassWindowMs</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">!</span><span class="k">this</span><span class="p">.</span><span class="na">isConnectionDead</span><span class="p">(</span><span class="n">poolEntry</span><span class="p">.</span><span class="na">connection</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                        </span><span class="k">this</span><span class="p">.</span><span class="na">metricsTracker</span><span class="p">.</span><span class="na">recordBorrowStats</span><span class="p">(</span><span class="n">poolEntry</span><span class="p">,</span><span class="w"> </span><span class="n">startTime</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                        </span><span class="n">Connection</span><span class="w"> </span><span class="n">var10</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">poolEntry</span><span class="p">.</span><span class="na">createProxyConnection</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="na">leakTaskFactory</span><span class="p">.</span><span class="na">schedule</span><span class="p">(</span><span class="n">poolEntry</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                        </span><span class="k">return</span><span class="w"> </span><span class="n">var10</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="k">this</span><span class="p">.</span><span class="na">closeConnection</span><span class="p">(</span><span class="n">poolEntry</span><span class="p">,</span><span class="w"> </span><span class="n">poolEntry</span><span class="p">.</span><span class="na">isMarkedEvicted</span><span class="p">()</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s">&#34;(connection was evicted)&#34;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s">&#34;(connection is dead)&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="n">timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hardTimeout</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">ClockSource</span><span class="p">.</span><span class="na">elapsedMillis</span><span class="p">(</span><span class="n">startTime</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">timeout</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">0L</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                        </span><span class="k">continue</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="k">this</span><span class="p">.</span><span class="na">metricsTracker</span><span class="p">.</span><span class="na">recordBorrowTimeoutStats</span><span class="p">(</span><span class="n">startTime</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="k">throw</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">createTimeoutException</span><span class="p">(</span><span class="n">startTime</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">InterruptedException</span><span class="w"> </span><span class="n">var14</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">InterruptedException</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var14</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">Thread</span><span class="p">.</span><span class="na">currentThread</span><span class="p">().</span><span class="na">interrupt</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SQLException</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="na">poolName</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&#34; - Interrupted during connection acquisition&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="na">suspendResumeLock</span><span class="p">.</span><span class="na">release</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><ol>
 <li>获取挂起/恢复锁</li>
 </ol>
-<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">suspendResumeLock</span><span style="color:#111">.</span><span style="color:#75af00">acquire</span><span style="color:#111">();</span>
-</span></span></code></pre></div><p>作用：获取一个锁，用于控制连接池的挂起/恢复操作。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="k">this</span><span class="p">.</span><span class="na">suspendResumeLock</span><span class="p">.</span><span class="na">acquire</span><span class="p">();</span><span class="w">
+</span></span></span></code></pre></div><p>作用：获取一个锁，用于控制连接池的挂起/恢复操作。</p>
 <p>场景	说明
 连接池挂起	暂停所有连接获取操作（如维护期间）
 连接池恢复	恢复连接获取操作
 锁的作用	确保在获取连接期间，连接池不会被挂起
 2. 记录开始时间</p>
-<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#00a8c8">long</span> <span style="color:#111">startTime</span> <span style="color:#f92672">=</span> <span style="color:#111">ClockSource</span><span style="color:#111">.</span><span style="color:#75af00">currentTime</span><span style="color:#111">();</span>
-</span></span></code></pre></div><p>作用：记录开始获取连接的时间，用于后续的超时计算和性能统计。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kt">long</span><span class="w"> </span><span class="n">startTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ClockSource</span><span class="p">.</span><span class="na">currentTime</span><span class="p">();</span><span class="w">
+</span></span></span></code></pre></div><p>作用：记录开始获取连接的时间，用于后续的超时计算和性能统计。</p>
 <ol start="3">
 <li>核心循环：获取连接</li>
 </ol>
-<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#00a8c8">while</span><span style="color:#111">(</span><span style="color:#00a8c8">true</span><span style="color:#111">)</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// 从连接袋中获取连接</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#111">PoolEntry</span> <span style="color:#111">poolEntry</span> <span style="color:#f92672">=</span> <span style="color:#111">(</span><span style="color:#111">PoolEntry</span><span style="color:#111">)</span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">connectionBag</span><span style="color:#111">.</span><span style="color:#75af00">borrow</span><span style="color:#111">(</span><span style="color:#111">timeout</span><span style="color:#111">,</span> <span style="color:#111">TimeUnit</span><span style="color:#111">.</span><span style="color:#75af00">MILLISECONDS</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span>    
-</span></span><span style="display:flex;"><span>    <span style="color:#00a8c8">if</span> <span style="color:#111">(</span><span style="color:#111">poolEntry</span> <span style="color:#f92672">!=</span> <span style="color:#00a8c8">null</span><span style="color:#111">)</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// 连接获取成功，进行有效性检查</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// ...</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// 超时处理</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// ...</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">}</span>
-</span></span></code></pre></div><p>connectionBag.borrow() 是核心方法，从连接池中借出一个连接条目。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="k">while</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 从连接袋中获取连接</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">PoolEntry</span><span class="w"> </span><span class="n">poolEntry</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">PoolEntry</span><span class="p">)</span><span class="k">this</span><span class="p">.</span><span class="na">connectionBag</span><span class="p">.</span><span class="na">borrow</span><span class="p">(</span><span class="n">timeout</span><span class="p">,</span><span class="w"> </span><span class="n">TimeUnit</span><span class="p">.</span><span class="na">MILLISECONDS</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">poolEntry</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 连接获取成功，进行有效性检查</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// ...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 超时处理</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// ...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><p>connectionBag.borrow() 是核心方法，从连接池中借出一个连接条目。</p>
 <ol start="4">
 <li>连接有效性检查</li>
 </ol>
-<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#00a8c8">if</span> <span style="color:#111">(</span><span style="color:#f92672">!</span><span style="color:#111">poolEntry</span><span style="color:#111">.</span><span style="color:#75af00">isMarkedEvicted</span><span style="color:#111">()</span> <span style="color:#f92672">&amp;&amp;</span> 
-</span></span><span style="display:flex;"><span>    <span style="color:#111">(</span><span style="color:#111">ClockSource</span><span style="color:#111">.</span><span style="color:#75af00">elapsedMillis</span><span style="color:#111">(</span><span style="color:#111">poolEntry</span><span style="color:#111">.</span><span style="color:#75af00">lastAccessed</span><span style="color:#111">,</span> <span style="color:#111">now</span><span style="color:#111">)</span> <span style="color:#f92672">&lt;=</span> <span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">aliveBypassWindowMs</span> <span style="color:#f92672">||</span> 
-</span></span><span style="display:flex;"><span>     <span style="color:#f92672">!</span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">isConnectionDead</span><span style="color:#111">(</span><span style="color:#111">poolEntry</span><span style="color:#111">.</span><span style="color:#75af00">connection</span><span style="color:#111">)))</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// 连接有效</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">}</span>
-</span></span></code></pre></div><p>检查逻辑：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">poolEntry</span><span class="p">.</span><span class="na">isMarkedEvicted</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">(</span><span class="n">ClockSource</span><span class="p">.</span><span class="na">elapsedMillis</span><span class="p">(</span><span class="n">poolEntry</span><span class="p">.</span><span class="na">lastAccessed</span><span class="p">,</span><span class="w"> </span><span class="n">now</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">aliveBypassWindowMs</span><span class="w"> </span><span class="o">||</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w">     </span><span class="o">!</span><span class="k">this</span><span class="p">.</span><span class="na">isConnectionDead</span><span class="p">(</span><span class="n">poolEntry</span><span class="p">.</span><span class="na">connection</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 连接有效</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><p>检查逻辑：</p>
 <p>检查项	说明
 !poolEntry.isMarkedEvicted()	连接未被标记为驱逐
 elapsedMillis(&hellip;) &lt;= aliveBypassWindowMs	连接最近被访问过（在存活窗口期内）
@@ -435,9 +438,9 @@ elapsedMillis(&hellip;) &lt;= aliveBypassWindowMs	连接最近被访问过（在
 <ol start="5">
 <li>创建代理连接</li>
 </ol>
-<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#111">Connection</span> <span style="color:#111">var10</span> <span style="color:#f92672">=</span> <span style="color:#111">poolEntry</span><span style="color:#111">.</span><span style="color:#75af00">createProxyConnection</span><span style="color:#111">(</span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">leakTaskFactory</span><span style="color:#111">.</span><span style="color:#75af00">schedule</span><span style="color:#111">(</span><span style="color:#111">poolEntry</span><span style="color:#111">));</span>
-</span></span><span style="display:flex;"><span><span style="color:#00a8c8">return</span> <span style="color:#111">var10</span><span style="color:#111">;</span>
-</span></span></code></pre></div><p>关键操作：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="n">Connection</span><span class="w"> </span><span class="n">var10</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">poolEntry</span><span class="p">.</span><span class="na">createProxyConnection</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="na">leakTaskFactory</span><span class="p">.</span><span class="na">schedule</span><span class="p">(</span><span class="n">poolEntry</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">return</span><span class="w"> </span><span class="n">var10</span><span class="p">;</span><span class="w">
+</span></span></span></code></pre></div><p>关键操作：</p>
 <p>步骤	说明
 leakTaskFactory.schedule(poolEntry)	调度一个连接泄漏检测任务
 poolEntry.createProxyConnection(&hellip;)	创建代理连接对象
@@ -445,77 +448,77 @@ poolEntry.createProxyConnection(&hellip;)	创建代理连接对象
 <p>拦截 close() 方法，实现连接归还而不是真正关闭
 记录连接使用信息，用于泄漏检测
 6. 处理无效连接</p>
-<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">closeConnection</span><span style="color:#111">(</span><span style="color:#111">poolEntry</span><span style="color:#111">,</span> <span style="color:#111">poolEntry</span><span style="color:#111">.</span><span style="color:#75af00">isMarkedEvicted</span><span style="color:#111">()</span> <span style="color:#f92672">?</span> <span style="color:#d88200">&#34;(connection was evicted)&#34;</span> <span style="color:#111">:</span> <span style="color:#d88200">&#34;(connection is dead)&#34;</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">timeout</span> <span style="color:#f92672">=</span> <span style="color:#111">hardTimeout</span> <span style="color:#f92672">-</span> <span style="color:#111">ClockSource</span><span style="color:#111">.</span><span style="color:#75af00">elapsedMillis</span><span style="color:#111">(</span><span style="color:#111">startTime</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span><span style="color:#00a8c8">if</span> <span style="color:#111">(</span><span style="color:#111">timeout</span> <span style="color:#f92672">&gt;</span> <span style="color:#111">0L</span><span style="color:#111">)</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#00a8c8">continue</span><span style="color:#111">;</span> <span style="color:#75715e">// 继续尝试获取连接</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">}</span>
-</span></span></code></pre></div><p>逻辑：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="k">this</span><span class="p">.</span><span class="na">closeConnection</span><span class="p">(</span><span class="n">poolEntry</span><span class="p">,</span><span class="w"> </span><span class="n">poolEntry</span><span class="p">.</span><span class="na">isMarkedEvicted</span><span class="p">()</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s">&#34;(connection was evicted)&#34;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s">&#34;(connection is dead)&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hardTimeout</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">ClockSource</span><span class="p">.</span><span class="na">elapsedMillis</span><span class="p">(</span><span class="n">startTime</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">timeout</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">0L</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">continue</span><span class="p">;</span><span class="w"> </span><span class="c1">// 继续尝试获取连接</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><p>逻辑：</p>
 <p>如果连接无效，关闭它并从池中移除
 计算剩余超时时间
 如果还有时间，继续尝试获取连接
 7. 超时处理</p>
-<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">metricsTracker</span><span style="color:#111">.</span><span style="color:#75af00">recordBorrowTimeoutStats</span><span style="color:#111">(</span><span style="color:#111">startTime</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span><span style="color:#00a8c8">throw</span> <span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">createTimeoutException</span><span style="color:#111">(</span><span style="color:#111">startTime</span><span style="color:#111">);</span>
-</span></span></code></pre></div><p>作用：记录超时统计信息并抛出超时异常。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="k">this</span><span class="p">.</span><span class="na">metricsTracker</span><span class="p">.</span><span class="na">recordBorrowTimeoutStats</span><span class="p">(</span><span class="n">startTime</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">throw</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">createTimeoutException</span><span class="p">(</span><span class="n">startTime</span><span class="p">);</span><span class="w">
+</span></span></span></code></pre></div><p>作用：记录超时统计信息并抛出超时异常。</p>
 <ol start="8">
 <li>异常处理</li>
 </ol>
-<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#111">}</span> <span style="color:#00a8c8">catch</span> <span style="color:#111">(</span><span style="color:#111">InterruptedException</span> <span style="color:#111">var14</span><span style="color:#111">)</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#111">Thread</span><span style="color:#111">.</span><span style="color:#75af00">currentThread</span><span style="color:#111">().</span><span style="color:#75af00">interrupt</span><span style="color:#111">();</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#00a8c8">throw</span> <span style="color:#00a8c8">new</span> <span style="color:#111">SQLException</span><span style="color:#111">(</span><span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">poolName</span> <span style="color:#f92672">+</span> <span style="color:#d88200">&#34; - Interrupted during connection acquisition&#34;</span><span style="color:#111">,</span> <span style="color:#111">e</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">}</span>
-</span></span></code></pre></div><p>处理中断：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">InterruptedException</span><span class="w"> </span><span class="n">var14</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Thread</span><span class="p">.</span><span class="na">currentThread</span><span class="p">().</span><span class="na">interrupt</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SQLException</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="na">poolName</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&#34; - Interrupted during connection acquisition&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><p>处理中断：</p>
 <p>恢复线程的中断状态
 抛出 SQLException 异常
 9. 释放锁</p>
-<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#111">}</span> <span style="color:#00a8c8">finally</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#00a8c8">this</span><span style="color:#111">.</span><span style="color:#75af00">suspendResumeLock</span><span style="color:#111">.</span><span style="color:#75af00">release</span><span style="color:#111">();</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">}</span>
-</span></span></code></pre></div><p>确保锁被释放：无论是否成功获取连接，都要释放挂起/恢复锁。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="na">suspendResumeLock</span><span class="p">.</span><span class="na">release</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><p>确保锁被释放：无论是否成功获取连接，都要释放挂起/恢复锁。</p>
 <p>三、核心数据结构
 PoolEntry —— 连接条目</p>
-<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#00a8c8">public</span> <span style="color:#00a8c8">class</span> <span style="color:#75af00">PoolEntry</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#00a8c8">private</span> <span style="color:#00a8c8">final</span> <span style="color:#111">Connection</span> <span style="color:#111">connection</span><span style="color:#111">;</span> <span style="color:#75715e">// 真正的 JDBC 连接</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#00a8c8">private</span> <span style="color:#00a8c8">volatile</span> <span style="color:#00a8c8">long</span> <span style="color:#111">lastAccessed</span><span style="color:#111">;</span>  <span style="color:#75715e">// 最后访问时间</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#00a8c8">private</span> <span style="color:#00a8c8">volatile</span> <span style="color:#00a8c8">boolean</span> <span style="color:#111">evicted</span><span style="color:#111">;</span>    <span style="color:#75715e">// 是否被驱逐</span>
-</span></span><span style="display:flex;"><span>    
-</span></span><span style="display:flex;"><span>    <span style="color:#00a8c8">public</span> <span style="color:#111">Connection</span> <span style="color:#75af00">createProxyConnection</span><span style="color:#111">(</span><span style="color:#111">LeakTask</span> <span style="color:#111">leakTask</span><span style="color:#111">)</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// 创建代理连接</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">}</span>
-</span></span></code></pre></div><p>connectionBag —— 连接袋
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">PoolEntry</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">Connection</span><span class="w"> </span><span class="n">connection</span><span class="p">;</span><span class="w"> </span><span class="c1">// 真正的 JDBC 连接</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">volatile</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">lastAccessed</span><span class="p">;</span><span class="w">  </span><span class="c1">// 最后访问时间</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">volatile</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="n">evicted</span><span class="p">;</span><span class="w">    </span><span class="c1">// 是否被驱逐</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">Connection</span><span class="w"> </span><span class="nf">createProxyConnection</span><span class="p">(</span><span class="n">LeakTask</span><span class="w"> </span><span class="n">leakTask</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 创建代理连接</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><p>connectionBag —— 连接袋
 HikariCP 使用一个高效的数据结构管理连接，支持快速的借用和归还操作。</p>
 <p>四、流程图</p>
-<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>getConnection(hardTimeout)
-</span></span><span style="display:flex;"><span>       ↓
-</span></span><span style="display:flex;"><span>acquire suspendResumeLock
-</span></span><span style="display:flex;"><span>       ↓
-</span></span><span style="display:flex;"><span>record startTime
-</span></span><span style="display:flex;"><span>       ↓
-</span></span><span style="display:flex;"><span>┌─────────────────────────┐
-</span></span><span style="display:flex;"><span>│      while(true)        │
-</span></span><span style="display:flex;"><span>│    borrow connection    │←┐
-</span></span><span style="display:flex;"><span>│      from connectionBag │ │
-</span></span><span style="display:flex;"><span>└───────────┬─────────────┘ │
-</span></span><span style="display:flex;"><span>            ↓               │
-</span></span><span style="display:flex;"><span>    poolEntry != null?      │
-</span></span><span style="display:flex;"><span>            ↓               │
-</span></span><span style="display:flex;"><span>       检查连接有效性        │
-</span></span><span style="display:flex;"><span>            ↓               │
-</span></span><span style="display:flex;"><span>       有效?                │
-</span></span><span style="display:flex;"><span>      ↓      ↓             │
-</span></span><span style="display:flex;"><span>    是      否              │
-</span></span><span style="display:flex;"><span>    ↓        ↓             │
-</span></span><span style="display:flex;"><span> 创建代理   关闭连接         │
-</span></span><span style="display:flex;"><span>    ↓      更新超时         │
-</span></span><span style="display:flex;"><span> 返回连接  continue ←───────┘
-</span></span><span style="display:flex;"><span>            ↓
-</span></span><span style="display:flex;"><span>   timeout &lt;= 0?
-</span></span><span style="display:flex;"><span>            ↓
-</span></span><span style="display:flex;"><span>       抛出超时异常
-</span></span><span style="display:flex;"><span>            ↓
-</span></span><span style="display:flex;"><span>release suspendResumeLock
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">getConnection(hardTimeout)
+</span></span><span class="line"><span class="cl">       ↓
+</span></span><span class="line"><span class="cl">acquire suspendResumeLock
+</span></span><span class="line"><span class="cl">       ↓
+</span></span><span class="line"><span class="cl">record startTime
+</span></span><span class="line"><span class="cl">       ↓
+</span></span><span class="line"><span class="cl">┌─────────────────────────┐
+</span></span><span class="line"><span class="cl">│      while(true)        │
+</span></span><span class="line"><span class="cl">│    borrow connection    │←┐
+</span></span><span class="line"><span class="cl">│      from connectionBag │ │
+</span></span><span class="line"><span class="cl">└───────────┬─────────────┘ │
+</span></span><span class="line"><span class="cl">            ↓               │
+</span></span><span class="line"><span class="cl">    poolEntry != null?      │
+</span></span><span class="line"><span class="cl">            ↓               │
+</span></span><span class="line"><span class="cl">       检查连接有效性        │
+</span></span><span class="line"><span class="cl">            ↓               │
+</span></span><span class="line"><span class="cl">       有效?                │
+</span></span><span class="line"><span class="cl">      ↓      ↓             │
+</span></span><span class="line"><span class="cl">    是      否              │
+</span></span><span class="line"><span class="cl">    ↓        ↓             │
+</span></span><span class="line"><span class="cl"> 创建代理   关闭连接         │
+</span></span><span class="line"><span class="cl">    ↓      更新超时         │
+</span></span><span class="line"><span class="cl"> 返回连接  continue ←───────┘
+</span></span><span class="line"><span class="cl">            ↓
+</span></span><span class="line"><span class="cl">   timeout &lt;= 0?
+</span></span><span class="line"><span class="cl">            ↓
+</span></span><span class="line"><span class="cl">       抛出超时异常
+</span></span><span class="line"><span class="cl">            ↓
+</span></span><span class="line"><span class="cl">release suspendResumeLock
 </span></span></code></pre></div>
 
   </div>
@@ -537,7 +540,7 @@ HikariCP 使用一个高效的数据结构管理连接，支持快速的借用�
     </main>
     
 <footer class="footer">
-        <span>&copy; 2026 <a href="https://kelp-z.github.io/">我的笔记</a></span> · 
+        <span>&copy; 2026 <a href="https://kelp-z.github.io/">Kelp&#39;s Blog</a></span> · 
 
     
     

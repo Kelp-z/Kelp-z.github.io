@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <meta name="robots" content="index, follow">
-<title>动态代理部分源码分析 | 我的笔记</title>
+<title>动态代理部分源码分析 | Kelp&#39;s Blog</title>
 <meta name="keywords" content="Java, 代理">
 <meta name="description" content="动态代理
 创建代理的参数含义
@@ -117,9 +117,9 @@ public Objec invoke(Object proxy,Menthod,object[] args)throws throwable{
         }
     }
 ">
-<meta name="author" content="Your Name">
+<meta name="author" content="Kelp">
 <link rel="canonical" href="https://kelp-z.github.io/posts/%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86%E9%83%A8%E5%88%86%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/">
-<link crossorigin="anonymous" href="/assets/css/stylesheet.6719049ef83141cbcecd2de778b6643b0bc178a539084df99e7fadbd72b388aa.css" integrity="sha256-ZxkEnvgxQcvOzS3neLZkOwvBeKU5CE35nn&#43;tvXKziKo=" rel="preload stylesheet" as="style">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.a2bd0141436a89bde36ca893662caeedd75dc8ccf9dd0e1c0c940b3121bc3fd2.css" integrity="sha256-or0BQUNqib3jbKiTZiyu7dddyMz53Q4cDJQLMSG8P9I=" rel="preload stylesheet" as="style">
 <link rel="icon" href="https://kelp-z.github.io/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="https://kelp-z.github.io/favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="https://kelp-z.github.io/favicon-32x32.png">
@@ -173,9 +173,9 @@ public Objec invoke(Object proxy,Menthod,object[] args)throws throwable{
         document.querySelector("html").dataset.theme = 'light';
     }
 
-</script><link rel="stylesheet" href="/css/extended/custom.min.20210ab6dd1c11b0f974a1e9198da6accbd2d4a8d225c0fc35d98842413eab4a.css" integrity="sha256-ICEKtt0cEbD5dKHpGY2mrMvS1KjSJcD8NdmIQkE&#43;q0o=">
+</script><link rel="stylesheet" href="/css/extended/custom.min.0b968ab02a9bd39dd62c1c69a2d435c18de8e16d713aa6707ff665bc389a7644.css" integrity="sha256-C5aKsCqb053WLBxpotQ1wY3o4W1xOqZwf/ZlvDiadkQ=">
 <meta property="og:url" content="https://kelp-z.github.io/posts/%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86%E9%83%A8%E5%88%86%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/">
-  <meta property="og:site_name" content="我的笔记">
+  <meta property="og:site_name" content="Kelp&#39;s Blog">
   <meta property="og:title" content="动态代理部分源码分析">
   <meta property="og:description" content="动态代理 创建代理的参数含义 //这是java中import java.lang.reflect.Proxy包下的一个方法用来创建代理 public static Object newProxyInstance(ClassLoader loader,Class&lt;?&gt;[] interfaces,InvocationHandler h) //参数一：指定类加载器 //参数二：指定接口 //参数三：指定代理对象要干么事情（可以用匿名内部类的形式创建这个参数，参数里要重写invoke方法，当你调用代	理对象的方法时，会自动调用invoke里的方法） public Objec invoke(Object proxy,Menthod,object[] args)throws throwable{ } //参数一：代理的对象 //参数二：要运行的方法 //参数三：调用方法时传递的实参 源码解析： @CallerSensitive public static Object newProxyInstance(ClassLoader loader, Class&lt;?&gt;[] interfaces, InvocationHandler h) { //先调用了requireNonNull(h)方法，判断InvocationHandler对象是否为空，若为空则抛出空指针异常 InvocationHandler h) Objects.requireNonNull(h); /*这一段代码是在检查是否有安全管理器，如果没有则把caller设置为空，如果有就调用 Reflection.getCallerClass()获取当前调用newProxyInstance方法的那个类。 在java早期，安全管理器会控制代码权限，它会检查哪个类在调用newProxyInstance，这个类有没有权限在某个包下创建代理类。现在安全管理器基本上没人用了。所以这行段代码在大部分情况下，caller都等于null */ @SuppressWarnings(&#34;removal&#34;) final Class&lt;?&gt; caller = System.getSecurityManager() == null ? null : Reflection.getCallerClass(); //获取代理类的构造器 Constructor&lt;?&gt; cons = getProxyConstructor(caller, loader, interfaces); //创建代理对象并返回 return newProxyInstance(caller, cons, h); } //对getProxyConstructor方法的分析 private static Constructor&lt;?&gt; getProxyConstructor(Class&lt;?&gt; caller, ClassLoader loader, Class&lt;?&gt;... interfaces) { //只有1个接口的情况 if (interfaces.length == 1) { Class&lt;?&gt; intf = interfaces[0]; //权限检验，caller大部分情况为空，checkProxyAccess通常不会执行，在上面解释过 if (caller != null) { checkProxyAccess(caller, loader, intf); } /* 首先，我们要先知道return这一段在干什么——以类加载器和接口为key，去缓存里查找代理类的构造器，如果缓存里没有，就生成对应的构造器存入缓存，并返回构造器 接下来我们再具体分析 proxyCache是一个双层缓存，第一层key是你要代理的接口（intf），第二层是类加载器（loader） computeIfAbsent方法是Map接口中的一个方法，它的作用是，如果Map中有这个key，就返回对应的Value；如果没有，就生成一个Value，存入Map，并返回 lambda表达式中的参数ld是类加载器loader，clv.key（）可以获取到传入的接口intf 那么这段代码我们可以解释为，先通过 proxyCache.sub(intf)找到属于这个接口的子缓存，在调用computeIfAbsent方法以类加载器（loader）作为key去查对应的ProxyBuilder对象，如果缓存里没有，就调用这个lambda表达式(ld, clv) -&gt; new ProxyBuilder(ld, clv.key()）创建一个ProxyBuilder对象，最后在通过.build()方法获取到对应的构造器。 */ return proxyCache.sub(intf).computeIfAbsent( loader, (ld, clv) -&gt; new ProxyBuilder(ld, clv.key()).build() ); } else { //有多个接口的情况，与上面只有1个接口的情况相似 final Class&lt;?&gt;[] intfsArray = interfaces.clone(); if (caller != null) { checkProxyAccess(caller, loader, intfsArray); } final List&lt;Class&lt;?&gt;&gt; intfs = Arrays.asList(intfsArray); return proxyCache.sub(intfs).computeIfAbsent( loader, (ld, clv) -&gt; new ProxyBuilder(ld, clv.key()).build() ); } } //创建代理对象的方法 private static Object newProxyInstance(Class&lt;?&gt; caller, // null if no SecurityManager Constructor&lt;?&gt; cons, InvocationHandler h) { /* * Invoke its constructor with the designated invocation handler. */ try { if (caller != null) { checkNewProxyPermission(caller, cons.getDeclaringClass()); } //这一行代码是通过反射获取了代理类的唯一构造方法，把你写的InvocationHandler实例也就是h作为参数传入，这个h会 被保存到父类Proxy的成员变量h中，最后创建并返回这个代理类的实例对象 return cons.newInstance(new Object[]{h});//整段代码的核心部分，其它都是异常处理。 } catch (IllegalAccessException | InstantiationException e) { throw new InternalError(e.toString(), e); } catch (InvocationTargetException e) { Throwable t = e.getCause(); if (t instanceof RuntimeException re) { throw re; } else { throw new InternalError(t.toString(), t); } } }">
   <meta property="og:locale" content="zh_CN">
@@ -228,7 +228,7 @@ public Objec invoke(Object proxy,Menthod,object[] args)throws throwable{
   "dateModified": "2026-09-07T00:00:00Z",
   "author":{
     "@type": "Person",
-    "name": "Your Name"
+    "name": "Kelp"
   },
   "mainEntityOfPage": {
     "@type": "WebPage",
@@ -236,7 +236,7 @@ public Objec invoke(Object proxy,Menthod,object[] args)throws throwable{
   },
   "publisher": {
     "@type": "Organization",
-    "name": "我的笔记",
+    "name": "Kelp's Blog",
     "logo": {
       "@type": "ImageObject",
       "url": "https://kelp-z.github.io/favicon.ico"
@@ -249,7 +249,10 @@ public Objec invoke(Object proxy,Menthod,object[] args)throws throwable{
     <header class="header">
     <nav class="header-nav">
         <div class="logo">
-            <a href="https://kelp-z.github.io/" accesskey="h" title="我的笔记 (Alt + H)">我的笔记</a>
+            <a href="https://kelp-z.github.io/" accesskey="h" title="Kelp&#39;s Blog (Alt + H)">
+                        
+                    <img src="https://kelp-z.github.io/images/jerry-avatar_hu_6a3ecb67e03d750e.png" alt="" aria-label="logo"
+                        height="42">Kelp&#39;s Blog</a>
             <div class="logo-switches">
                 <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
                     <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
@@ -323,7 +326,7 @@ public Objec invoke(Object proxy,Menthod,object[] args)throws throwable{
     </h1>
     <div class="post-meta">
 
-<span title='2026-09-07 00:00:00 +0000 UTC'>2026年9月7日</span>&nbsp;·&nbsp;<span>2 分钟</span>&nbsp;·&nbsp;<span>Your Name</span>
+<span title='2026-09-07 00:00:00 +0000 UTC'>2026年9月7日</span>&nbsp;·&nbsp;<span>2 分钟</span>&nbsp;·&nbsp;<span>Kelp</span>
 
 </div>
   </header> <details class="toc" >
@@ -350,114 +353,114 @@ public Objec invoke(Object proxy,Menthod,object[] args)throws throwable{
 
   <div class="post-content md-content"><h1 id="动态代理">动态代理<a hidden class="anchor" aria-hidden="true" href="#动态代理">#</a></h1>
 <h3 id="创建代理的参数含义">创建代理的参数含义<a hidden class="anchor" aria-hidden="true" href="#创建代理的参数含义">#</a></h3>
-<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#75715e">//这是java中import java.lang.reflect.Proxy包下的一个方法用来创建代理</span>
-</span></span><span style="display:flex;"><span><span style="color:#00a8c8">public</span> <span style="color:#00a8c8">static</span> <span style="color:#111">Object</span> <span style="color:#75af00">newProxyInstance</span><span style="color:#111">(</span><span style="color:#111">ClassLoader</span> <span style="color:#111">loader</span><span style="color:#111">,</span><span style="color:#111">Class</span><span style="color:#f92672">&lt;?&gt;[]</span> <span style="color:#111">interfaces</span><span style="color:#111">,</span><span style="color:#111">InvocationHandler</span> <span style="color:#111">h</span><span style="color:#111">)</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">//参数一：指定类加载器</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">//参数二：指定接口</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">//参数三：指定代理对象要干么事情（可以用匿名内部类的形式创建这个参数，参数里要重写invoke方法，当你调用代			 理对象的方法时，会自动调用invoke里的方法）</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    
-</span></span><span style="display:flex;"><span>    
-</span></span><span style="display:flex;"><span><span style="color:#00a8c8">public</span> <span style="color:#111">Objec</span> <span style="color:#75af00">invoke</span><span style="color:#111">(</span><span style="color:#111">Object</span> <span style="color:#111">proxy</span><span style="color:#111">,</span><span style="color:#111">Menthod</span><span style="color:#111">,</span><span style="color:#111">object</span><span style="color:#f92672">[]</span> <span style="color:#111">args</span><span style="color:#111">)</span><span style="color:#00a8c8">throws</span> <span style="color:#111">throwable</span><span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>    
-</span></span><span style="display:flex;"><span><span style="color:#111">}</span>    
-</span></span><span style="display:flex;"><span><span style="color:#75715e">//参数一：代理的对象</span>
-</span></span><span style="display:flex;"><span><span style="color:#75715e">//参数二：要运行的方法</span>
-</span></span><span style="display:flex;"><span><span style="color:#75715e">//参数三：调用方法时传递的实参</span>
-</span></span></code></pre></div><h3 id="源码解析">源码解析：<a hidden class="anchor" aria-hidden="true" href="#源码解析">#</a></h3>
-<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#75af00">@CallerSensitive</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#00a8c8">public</span> <span style="color:#00a8c8">static</span> <span style="color:#111">Object</span> <span style="color:#75af00">newProxyInstance</span><span style="color:#111">(</span><span style="color:#111">ClassLoader</span> <span style="color:#111">loader</span><span style="color:#111">,</span>
-</span></span><span style="display:flex;"><span>                                          <span style="color:#111">Class</span><span style="color:#f92672">&lt;?&gt;[]</span> <span style="color:#111">interfaces</span><span style="color:#111">,</span>
-</span></span><span style="display:flex;"><span>                                          <span style="color:#111">InvocationHandler</span> <span style="color:#111">h</span><span style="color:#111">)</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span> <span style="color:#75715e">//先调用了requireNonNull(h)方法，判断InvocationHandler对象是否为空，若为空则抛出空指针异常                                  InvocationHandler h)</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#111">Objects</span><span style="color:#111">.</span><span style="color:#75af00">requireNonNull</span><span style="color:#111">(</span><span style="color:#111">h</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#75715e">/*这一段代码是在检查是否有安全管理器，如果没有则把caller设置为空，如果有就调用 Reflection.getCallerClass()获取当前调用newProxyInstance方法的那个类。
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e">  在java早期，安全管理器会控制代码权限，它会检查哪个类在调用newProxyInstance，这个类有没有权限在某个包下创建代理类。现在安全管理器基本上没人用了。所以这行段代码在大部分情况下，caller都等于null
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e">  */</span>                                          
-</span></span><span style="display:flex;"><span>        <span style="color:#75af00">@SuppressWarnings</span><span style="color:#111">(</span><span style="color:#d88200">&#34;removal&#34;</span><span style="color:#111">)</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#00a8c8">final</span> <span style="color:#111">Class</span><span style="color:#f92672">&lt;?&gt;</span> <span style="color:#111">caller</span> <span style="color:#f92672">=</span> <span style="color:#111">System</span><span style="color:#111">.</span><span style="color:#75af00">getSecurityManager</span><span style="color:#111">()</span> <span style="color:#f92672">==</span> <span style="color:#00a8c8">null</span>
-</span></span><span style="display:flex;"><span>                                    <span style="color:#f92672">?</span> <span style="color:#00a8c8">null</span>
-</span></span><span style="display:flex;"><span>                                    <span style="color:#111">:</span> <span style="color:#111">Reflection</span><span style="color:#111">.</span><span style="color:#75af00">getCallerClass</span><span style="color:#111">();</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>                                          
-</span></span><span style="display:flex;"><span>  <span style="color:#75715e">//获取代理类的构造器                                  </span>
-</span></span><span style="display:flex;"><span>        <span style="color:#111">Constructor</span><span style="color:#f92672">&lt;?&gt;</span> <span style="color:#111">cons</span> <span style="color:#f92672">=</span> <span style="color:#111">getProxyConstructor</span><span style="color:#111">(</span><span style="color:#111">caller</span><span style="color:#111">,</span> <span style="color:#111">loader</span><span style="color:#111">,</span> <span style="color:#111">interfaces</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>  <span style="color:#75715e">//创建代理对象并返回                                        </span>
-</span></span><span style="display:flex;"><span>        <span style="color:#00a8c8">return</span> <span style="color:#111">newProxyInstance</span><span style="color:#111">(</span><span style="color:#111">caller</span><span style="color:#111">,</span> <span style="color:#111">cons</span><span style="color:#111">,</span> <span style="color:#111">h</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#75715e">//对getProxyConstructor方法的分析</span>
-</span></span><span style="display:flex;"><span> <span style="color:#00a8c8">private</span> <span style="color:#00a8c8">static</span> <span style="color:#111">Constructor</span><span style="color:#f92672">&lt;?&gt;</span> <span style="color:#75af00">getProxyConstructor</span><span style="color:#111">(</span><span style="color:#111">Class</span><span style="color:#f92672">&lt;?&gt;</span> <span style="color:#111">caller</span><span style="color:#111">,</span>
-</span></span><span style="display:flex;"><span>                                                      <span style="color:#111">ClassLoader</span> <span style="color:#111">loader</span><span style="color:#111">,</span>
-</span></span><span style="display:flex;"><span>                                                      <span style="color:#111">Class</span><span style="color:#f92672">&lt;?&gt;</span><span style="color:#111">...</span> <span style="color:#111">interfaces</span><span style="color:#111">)</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#75715e">//只有1个接口的情况</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#00a8c8">if</span> <span style="color:#111">(</span><span style="color:#111">interfaces</span><span style="color:#111">.</span><span style="color:#75af00">length</span> <span style="color:#f92672">==</span> <span style="color:#111">1</span><span style="color:#111">)</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#111">Class</span><span style="color:#f92672">&lt;?&gt;</span> <span style="color:#111">intf</span> <span style="color:#f92672">=</span> <span style="color:#111">interfaces</span><span style="color:#f92672">[</span><span style="color:#111">0</span><span style="color:#f92672">]</span><span style="color:#111">;</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#75715e">//权限检验，caller大部分情况为空，checkProxyAccess通常不会执行，在上面解释过</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#00a8c8">if</span> <span style="color:#111">(</span><span style="color:#111">caller</span> <span style="color:#f92672">!=</span> <span style="color:#00a8c8">null</span><span style="color:#111">)</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>                <span style="color:#111">checkProxyAccess</span><span style="color:#111">(</span><span style="color:#111">caller</span><span style="color:#111">,</span> <span style="color:#111">loader</span><span style="color:#111">,</span> <span style="color:#111">intf</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span>            
-</span></span><span style="display:flex;"><span>            <span style="color:#75715e">/*
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e">            首先，我们要先知道return这一段在干什么——以类加载器和接口为key，去缓存里查找代理类的构造器，如果缓存里没有，就生成对应的构造器存入缓存，并返回构造器
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e">            接下来我们再具体分析
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e">            proxyCache是一个双层缓存，第一层key是你要代理的接口（intf），第二层是类加载器（loader）
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e">            computeIfAbsent方法是Map接口中的一个方法，它的作用是，如果Map中有这个key，就返回对应的Value；如果没有，就生成一个Value，存入Map，并返回
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e">            lambda表达式中的参数ld是类加载器loader，clv.key（）可以获取到传入的接口intf
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e">            那么这段代码我们可以解释为，先通过 proxyCache.sub(intf)找到属于这个接口的子缓存，在调用computeIfAbsent方法以类加载器（loader）作为key去查对应的ProxyBuilder对象，如果缓存里没有，就调用这个lambda表达式(ld, clv) -&gt; new ProxyBuilder(ld, clv.key()）创建一个ProxyBuilder对象，最后在通过.build()方法获取到对应的构造器。
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e">            */</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#00a8c8">return</span> <span style="color:#111">proxyCache</span><span style="color:#111">.</span><span style="color:#75af00">sub</span><span style="color:#111">(</span><span style="color:#111">intf</span><span style="color:#111">).</span><span style="color:#75af00">computeIfAbsent</span><span style="color:#111">(</span>
-</span></span><span style="display:flex;"><span>                <span style="color:#111">loader</span><span style="color:#111">,</span>
-</span></span><span style="display:flex;"><span>                <span style="color:#111">(</span><span style="color:#111">ld</span><span style="color:#111">,</span> <span style="color:#111">clv</span><span style="color:#111">)</span> <span style="color:#f92672">-&gt;</span> <span style="color:#00a8c8">new</span> <span style="color:#111">ProxyBuilder</span><span style="color:#111">(</span><span style="color:#111">ld</span><span style="color:#111">,</span> <span style="color:#111">clv</span><span style="color:#111">.</span><span style="color:#75af00">key</span><span style="color:#111">()).</span><span style="color:#75af00">build</span><span style="color:#111">()</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#111">}</span> <span style="color:#00a8c8">else</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#75715e">//有多个接口的情况，与上面只有1个接口的情况相似</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#00a8c8">final</span> <span style="color:#111">Class</span><span style="color:#f92672">&lt;?&gt;[]</span> <span style="color:#111">intfsArray</span> <span style="color:#f92672">=</span> <span style="color:#111">interfaces</span><span style="color:#111">.</span><span style="color:#75af00">clone</span><span style="color:#111">();</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#00a8c8">if</span> <span style="color:#111">(</span><span style="color:#111">caller</span> <span style="color:#f92672">!=</span> <span style="color:#00a8c8">null</span><span style="color:#111">)</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>                <span style="color:#111">checkProxyAccess</span><span style="color:#111">(</span><span style="color:#111">caller</span><span style="color:#111">,</span> <span style="color:#111">loader</span><span style="color:#111">,</span> <span style="color:#111">intfsArray</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#00a8c8">final</span> <span style="color:#111">List</span><span style="color:#f92672">&lt;</span><span style="color:#111">Class</span><span style="color:#f92672">&lt;?&gt;&gt;</span> <span style="color:#111">intfs</span> <span style="color:#f92672">=</span> <span style="color:#111">Arrays</span><span style="color:#111">.</span><span style="color:#75af00">asList</span><span style="color:#111">(</span><span style="color:#111">intfsArray</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#00a8c8">return</span> <span style="color:#111">proxyCache</span><span style="color:#111">.</span><span style="color:#75af00">sub</span><span style="color:#111">(</span><span style="color:#111">intfs</span><span style="color:#111">).</span><span style="color:#75af00">computeIfAbsent</span><span style="color:#111">(</span>
-</span></span><span style="display:flex;"><span>                <span style="color:#111">loader</span><span style="color:#111">,</span>
-</span></span><span style="display:flex;"><span>                <span style="color:#111">(</span><span style="color:#111">ld</span><span style="color:#111">,</span> <span style="color:#111">clv</span><span style="color:#111">)</span> <span style="color:#f92672">-&gt;</span> <span style="color:#00a8c8">new</span> <span style="color:#111">ProxyBuilder</span><span style="color:#111">(</span><span style="color:#111">ld</span><span style="color:#111">,</span> <span style="color:#111">clv</span><span style="color:#111">.</span><span style="color:#75af00">key</span><span style="color:#111">()).</span><span style="color:#75af00">build</span><span style="color:#111">()</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#75715e">//创建代理对象的方法</span>
-</span></span><span style="display:flex;"><span> <span style="color:#00a8c8">private</span> <span style="color:#00a8c8">static</span> <span style="color:#111">Object</span> <span style="color:#75af00">newProxyInstance</span><span style="color:#111">(</span><span style="color:#111">Class</span><span style="color:#f92672">&lt;?&gt;</span> <span style="color:#111">caller</span><span style="color:#111">,</span> <span style="color:#75715e">// null if no SecurityManager</span>
-</span></span><span style="display:flex;"><span>                                           <span style="color:#111">Constructor</span><span style="color:#f92672">&lt;?&gt;</span> <span style="color:#111">cons</span><span style="color:#111">,</span>
-</span></span><span style="display:flex;"><span>                                           <span style="color:#111">InvocationHandler</span> <span style="color:#111">h</span><span style="color:#111">)</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#75715e">/*
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e">         * Invoke its constructor with the designated invocation handler.
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e">         */</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#00a8c8">try</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#00a8c8">if</span> <span style="color:#111">(</span><span style="color:#111">caller</span> <span style="color:#f92672">!=</span> <span style="color:#00a8c8">null</span><span style="color:#111">)</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>                <span style="color:#111">checkNewProxyPermission</span><span style="color:#111">(</span><span style="color:#111">caller</span><span style="color:#111">,</span> <span style="color:#111">cons</span><span style="color:#111">.</span><span style="color:#75af00">getDeclaringClass</span><span style="color:#111">());</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#75715e">//这一行代码是通过反射获取了代理类的唯一构造方法，把你写的InvocationHandler实例也就是h作为参数传入，这个h会  				被保存到父类Proxy的成员变量h中，最后创建并返回这个代理类的实例对象</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#00a8c8">return</span> <span style="color:#111">cons</span><span style="color:#111">.</span><span style="color:#75af00">newInstance</span><span style="color:#111">(</span><span style="color:#00a8c8">new</span> <span style="color:#111">Object</span><span style="color:#f92672">[]</span><span style="color:#111">{</span><span style="color:#111">h</span><span style="color:#111">});</span><span style="color:#75715e">//整段代码的核心部分，其它都是异常处理。</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#111">}</span> <span style="color:#00a8c8">catch</span> <span style="color:#111">(</span><span style="color:#111">IllegalAccessException</span> <span style="color:#f92672">|</span> <span style="color:#111">InstantiationException</span> <span style="color:#111">e</span><span style="color:#111">)</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#00a8c8">throw</span> <span style="color:#00a8c8">new</span> <span style="color:#111">InternalError</span><span style="color:#111">(</span><span style="color:#111">e</span><span style="color:#111">.</span><span style="color:#75af00">toString</span><span style="color:#111">(),</span> <span style="color:#111">e</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#111">}</span> <span style="color:#00a8c8">catch</span> <span style="color:#111">(</span><span style="color:#111">InvocationTargetException</span> <span style="color:#111">e</span><span style="color:#111">)</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#111">Throwable</span> <span style="color:#111">t</span> <span style="color:#f92672">=</span> <span style="color:#111">e</span><span style="color:#111">.</span><span style="color:#75af00">getCause</span><span style="color:#111">();</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#00a8c8">if</span> <span style="color:#111">(</span><span style="color:#111">t</span> <span style="color:#00a8c8">instanceof</span> <span style="color:#111">RuntimeException</span> <span style="color:#111">re</span><span style="color:#111">)</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>                <span style="color:#00a8c8">throw</span> <span style="color:#111">re</span><span style="color:#111">;</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#111">}</span> <span style="color:#00a8c8">else</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>                <span style="color:#00a8c8">throw</span> <span style="color:#00a8c8">new</span> <span style="color:#111">InternalError</span><span style="color:#111">(</span><span style="color:#111">t</span><span style="color:#111">.</span><span style="color:#75af00">toString</span><span style="color:#111">(),</span> <span style="color:#111">t</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#111">}</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#111">}</span>
-</span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">//这是java中import java.lang.reflect.Proxy包下的一个方法用来创建代理</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="n">Object</span><span class="w"> </span><span class="nf">newProxyInstance</span><span class="p">(</span><span class="n">ClassLoader</span><span class="w"> </span><span class="n">loader</span><span class="p">,</span><span class="n">Class</span><span class="o">&lt;?&gt;[]</span><span class="w"> </span><span class="n">interfaces</span><span class="p">,</span><span class="n">InvocationHandler</span><span class="w"> </span><span class="n">h</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">//参数一：指定类加载器</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">//参数二：指定接口</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">//参数三：指定代理对象要干么事情（可以用匿名内部类的形式创建这个参数，参数里要重写invoke方法，当你调用代			 理对象的方法时，会自动调用invoke里的方法）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">Objec</span><span class="w"> </span><span class="nf">invoke</span><span class="p">(</span><span class="n">Object</span><span class="w"> </span><span class="n">proxy</span><span class="p">,</span><span class="n">Menthod</span><span class="p">,</span><span class="n">object</span><span class="o">[]</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="kd">throws</span><span class="w"> </span><span class="n">throwable</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="c1">//参数一：代理的对象</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">//参数二：要运行的方法</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">//参数三：调用方法时传递的实参</span><span class="w">
+</span></span></span></code></pre></div><h3 id="源码解析">源码解析：<a hidden class="anchor" aria-hidden="true" href="#源码解析">#</a></h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@CallerSensitive</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="n">Object</span><span class="w"> </span><span class="nf">newProxyInstance</span><span class="p">(</span><span class="n">ClassLoader</span><span class="w"> </span><span class="n">loader</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                                          </span><span class="n">Class</span><span class="o">&lt;?&gt;[]</span><span class="w"> </span><span class="n">interfaces</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                                          </span><span class="n">InvocationHandler</span><span class="w"> </span><span class="n">h</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="c1">//先调用了requireNonNull(h)方法，判断InvocationHandler对象是否为空，若为空则抛出空指针异常                                  InvocationHandler h)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">Objects</span><span class="p">.</span><span class="na">requireNonNull</span><span class="p">(</span><span class="n">h</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="cm">/*这一段代码是在检查是否有安全管理器，如果没有则把caller设置为空，如果有就调用 Reflection.getCallerClass()获取当前调用newProxyInstance方法的那个类。
+</span></span></span><span class="line"><span class="cl"><span class="cm">  在java早期，安全管理器会控制代码权限，它会检查哪个类在调用newProxyInstance，这个类有没有权限在某个包下创建代理类。现在安全管理器基本上没人用了。所以这行段代码在大部分情况下，caller都等于null
+</span></span></span><span class="line"><span class="cl"><span class="cm">  */</span><span class="w">                                          
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nd">@SuppressWarnings</span><span class="p">(</span><span class="s">&#34;removal&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kd">final</span><span class="w"> </span><span class="n">Class</span><span class="o">&lt;?&gt;</span><span class="w"> </span><span class="n">caller</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="na">getSecurityManager</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                                    </span><span class="o">?</span><span class="w"> </span><span class="kc">null</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                                    </span><span class="p">:</span><span class="w"> </span><span class="n">Reflection</span><span class="p">.</span><span class="na">getCallerClass</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                                          
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c1">//获取代理类的构造器                                  </span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">Constructor</span><span class="o">&lt;?&gt;</span><span class="w"> </span><span class="n">cons</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getProxyConstructor</span><span class="p">(</span><span class="n">caller</span><span class="p">,</span><span class="w"> </span><span class="n">loader</span><span class="p">,</span><span class="w"> </span><span class="n">interfaces</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c1">//创建代理对象并返回                                        </span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">newProxyInstance</span><span class="p">(</span><span class="n">caller</span><span class="p">,</span><span class="w"> </span><span class="n">cons</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">//对getProxyConstructor方法的分析</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="n">Constructor</span><span class="o">&lt;?&gt;</span><span class="w"> </span><span class="nf">getProxyConstructor</span><span class="p">(</span><span class="n">Class</span><span class="o">&lt;?&gt;</span><span class="w"> </span><span class="n">caller</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                                                      </span><span class="n">ClassLoader</span><span class="w"> </span><span class="n">loader</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                                                      </span><span class="n">Class</span><span class="o">&lt;?&gt;</span><span class="p">...</span><span class="w"> </span><span class="n">interfaces</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">//只有1个接口的情况</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">interfaces</span><span class="p">.</span><span class="na">length</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">Class</span><span class="o">&lt;?&gt;</span><span class="w"> </span><span class="n">intf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">interfaces</span><span class="o">[</span><span class="n">0</span><span class="o">]</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">//权限检验，caller大部分情况为空，checkProxyAccess通常不会执行，在上面解释过</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">caller</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">checkProxyAccess</span><span class="p">(</span><span class="n">caller</span><span class="p">,</span><span class="w"> </span><span class="n">loader</span><span class="p">,</span><span class="w"> </span><span class="n">intf</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">            首先，我们要先知道return这一段在干什么——以类加载器和接口为key，去缓存里查找代理类的构造器，如果缓存里没有，就生成对应的构造器存入缓存，并返回构造器
+</span></span></span><span class="line"><span class="cl"><span class="cm">            接下来我们再具体分析
+</span></span></span><span class="line"><span class="cl"><span class="cm">            proxyCache是一个双层缓存，第一层key是你要代理的接口（intf），第二层是类加载器（loader）
+</span></span></span><span class="line"><span class="cl"><span class="cm">            computeIfAbsent方法是Map接口中的一个方法，它的作用是，如果Map中有这个key，就返回对应的Value；如果没有，就生成一个Value，存入Map，并返回
+</span></span></span><span class="line"><span class="cl"><span class="cm">            lambda表达式中的参数ld是类加载器loader，clv.key（）可以获取到传入的接口intf
+</span></span></span><span class="line"><span class="cl"><span class="cm">            那么这段代码我们可以解释为，先通过 proxyCache.sub(intf)找到属于这个接口的子缓存，在调用computeIfAbsent方法以类加载器（loader）作为key去查对应的ProxyBuilder对象，如果缓存里没有，就调用这个lambda表达式(ld, clv) -&gt; new ProxyBuilder(ld, clv.key()）创建一个ProxyBuilder对象，最后在通过.build()方法获取到对应的构造器。
+</span></span></span><span class="line"><span class="cl"><span class="cm">            */</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">proxyCache</span><span class="p">.</span><span class="na">sub</span><span class="p">(</span><span class="n">intf</span><span class="p">).</span><span class="na">computeIfAbsent</span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">loader</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="p">(</span><span class="n">ld</span><span class="p">,</span><span class="w"> </span><span class="n">clv</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ProxyBuilder</span><span class="p">(</span><span class="n">ld</span><span class="p">,</span><span class="w"> </span><span class="n">clv</span><span class="p">.</span><span class="na">key</span><span class="p">()).</span><span class="na">build</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">//有多个接口的情况，与上面只有1个接口的情况相似</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="kd">final</span><span class="w"> </span><span class="n">Class</span><span class="o">&lt;?&gt;[]</span><span class="w"> </span><span class="n">intfsArray</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">interfaces</span><span class="p">.</span><span class="na">clone</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">caller</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">checkProxyAccess</span><span class="p">(</span><span class="n">caller</span><span class="p">,</span><span class="w"> </span><span class="n">loader</span><span class="p">,</span><span class="w"> </span><span class="n">intfsArray</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="kd">final</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Class</span><span class="o">&lt;?&gt;&gt;</span><span class="w"> </span><span class="n">intfs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Arrays</span><span class="p">.</span><span class="na">asList</span><span class="p">(</span><span class="n">intfsArray</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">proxyCache</span><span class="p">.</span><span class="na">sub</span><span class="p">(</span><span class="n">intfs</span><span class="p">).</span><span class="na">computeIfAbsent</span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">loader</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="p">(</span><span class="n">ld</span><span class="p">,</span><span class="w"> </span><span class="n">clv</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ProxyBuilder</span><span class="p">(</span><span class="n">ld</span><span class="p">,</span><span class="w"> </span><span class="n">clv</span><span class="p">.</span><span class="na">key</span><span class="p">()).</span><span class="na">build</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">//创建代理对象的方法</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="n">Object</span><span class="w"> </span><span class="nf">newProxyInstance</span><span class="p">(</span><span class="n">Class</span><span class="o">&lt;?&gt;</span><span class="w"> </span><span class="n">caller</span><span class="p">,</span><span class="w"> </span><span class="c1">// null if no SecurityManager</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                                           </span><span class="n">Constructor</span><span class="o">&lt;?&gt;</span><span class="w"> </span><span class="n">cons</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                                           </span><span class="n">InvocationHandler</span><span class="w"> </span><span class="n">h</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="cm">/*
+</span></span></span><span class="line"><span class="cl"><span class="cm">         * Invoke its constructor with the designated invocation handler.
+</span></span></span><span class="line"><span class="cl"><span class="cm">         */</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">caller</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">checkNewProxyPermission</span><span class="p">(</span><span class="n">caller</span><span class="p">,</span><span class="w"> </span><span class="n">cons</span><span class="p">.</span><span class="na">getDeclaringClass</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">//这一行代码是通过反射获取了代理类的唯一构造方法，把你写的InvocationHandler实例也就是h作为参数传入，这个h会  				被保存到父类Proxy的成员变量h中，最后创建并返回这个代理类的实例对象</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">cons</span><span class="p">.</span><span class="na">newInstance</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Object</span><span class="o">[]</span><span class="p">{</span><span class="n">h</span><span class="p">});</span><span class="c1">//整段代码的核心部分，其它都是异常处理。</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">IllegalAccessException</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">InstantiationException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">InternalError</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="na">toString</span><span class="p">(),</span><span class="w"> </span><span class="n">e</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">InvocationTargetException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">Throwable</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="na">getCause</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">t</span><span class="w"> </span><span class="k">instanceof</span><span class="w"> </span><span class="n">RuntimeException</span><span class="w"> </span><span class="n">re</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="k">throw</span><span class="w"> </span><span class="n">re</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">InternalError</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="na">toString</span><span class="p">(),</span><span class="w"> </span><span class="n">t</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div>
 
   </div>
 
@@ -478,7 +481,7 @@ public Objec invoke(Object proxy,Menthod,object[] args)throws throwable{
     </main>
     
 <footer class="footer">
-        <span>&copy; 2026 <a href="https://kelp-z.github.io/">我的笔记</a></span> · 
+        <span>&copy; 2026 <a href="https://kelp-z.github.io/">Kelp&#39;s Blog</a></span> · 
 
     
     

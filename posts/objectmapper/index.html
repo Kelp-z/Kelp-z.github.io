@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <meta name="robots" content="index, follow">
-<title>ObjectMapper | 我的笔记</title>
+<title>ObjectMapper | Kelp&#39;s Blog</title>
 <meta name="keywords" content="Java, Jackson">
 <meta name="description" content="ObjectMapper
 什么是 ObjectMapper
@@ -37,9 +37,9 @@ ObjectMapper 的作用和用途
 
 ObjectMapperConfig 的作用
 在我们的项目中，ObjectMapperConfig 类的作用是：">
-<meta name="author" content="Your Name">
+<meta name="author" content="Kelp">
 <link rel="canonical" href="https://kelp-z.github.io/posts/objectmapper/">
-<link crossorigin="anonymous" href="/assets/css/stylesheet.6719049ef83141cbcecd2de778b6643b0bc178a539084df99e7fadbd72b388aa.css" integrity="sha256-ZxkEnvgxQcvOzS3neLZkOwvBeKU5CE35nn&#43;tvXKziKo=" rel="preload stylesheet" as="style">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.a2bd0141436a89bde36ca893662caeedd75dc8ccf9dd0e1c0c940b3121bc3fd2.css" integrity="sha256-or0BQUNqib3jbKiTZiyu7dddyMz53Q4cDJQLMSG8P9I=" rel="preload stylesheet" as="style">
 <link rel="icon" href="https://kelp-z.github.io/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="https://kelp-z.github.io/favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="https://kelp-z.github.io/favicon-32x32.png">
@@ -93,9 +93,9 @@ ObjectMapperConfig 的作用
         document.querySelector("html").dataset.theme = 'light';
     }
 
-</script><link rel="stylesheet" href="/css/extended/custom.min.20210ab6dd1c11b0f974a1e9198da6accbd2d4a8d225c0fc35d98842413eab4a.css" integrity="sha256-ICEKtt0cEbD5dKHpGY2mrMvS1KjSJcD8NdmIQkE&#43;q0o=">
+</script><link rel="stylesheet" href="/css/extended/custom.min.0b968ab02a9bd39dd62c1c69a2d435c18de8e16d713aa6707ff665bc389a7644.css" integrity="sha256-C5aKsCqb053WLBxpotQ1wY3o4W1xOqZwf/ZlvDiadkQ=">
 <meta property="og:url" content="https://kelp-z.github.io/posts/objectmapper/">
-  <meta property="og:site_name" content="我的笔记">
+  <meta property="og:site_name" content="Kelp&#39;s Blog">
   <meta property="og:title" content="ObjectMapper">
   <meta property="og:description" content="ObjectMapper 什么是 ObjectMapper ObjectMapper 是 Jackson 库中的核心类，用于处理 Java 对象与 JSON 数据之间的相互转换。它是一个功能强大的工具，能够：
 将 Java 对象序列化为 JSON 字符串 将 JSON 字符串反序列化为 Java 对象 处理 JSON 数据的解析和生成 ObjectMapper 的作用和用途 1. REST API 处理 自动将控制器方法的返回值转换为 JSON 响应 自动将 HTTP 请求体的 JSON 数据转换为 Java 对象 2. 第三方 API 交互 解析外部 API 返回的 JSON 响应（如我们项目中与企查查 API 的交互） 生成发送给外部 API 的 JSON 请求数据 3. 数据持久化 将 Java 对象转换为 JSON 格式存储 从 JSON 格式加载数据并转换为 Java 对象 4. 配置文件处理 解析 JSON 格式的配置文件 ObjectMapperConfig 的作用 在我们的项目中，ObjectMapperConfig 类的作用是：">
@@ -150,7 +150,7 @@ ObjectMapperConfig 的作用
   "dateModified": "2026-09-07T00:00:00Z",
   "author":{
     "@type": "Person",
-    "name": "Your Name"
+    "name": "Kelp"
   },
   "mainEntityOfPage": {
     "@type": "WebPage",
@@ -158,7 +158,7 @@ ObjectMapperConfig 的作用
   },
   "publisher": {
     "@type": "Organization",
-    "name": "我的笔记",
+    "name": "Kelp's Blog",
     "logo": {
       "@type": "ImageObject",
       "url": "https://kelp-z.github.io/favicon.ico"
@@ -171,7 +171,10 @@ ObjectMapperConfig 的作用
     <header class="header">
     <nav class="header-nav">
         <div class="logo">
-            <a href="https://kelp-z.github.io/" accesskey="h" title="我的笔记 (Alt + H)">我的笔记</a>
+            <a href="https://kelp-z.github.io/" accesskey="h" title="Kelp&#39;s Blog (Alt + H)">
+                        
+                    <img src="https://kelp-z.github.io/images/jerry-avatar_hu_6a3ecb67e03d750e.png" alt="" aria-label="logo"
+                        height="42">Kelp&#39;s Blog</a>
             <div class="logo-switches">
                 <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
                     <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
@@ -245,7 +248,7 @@ ObjectMapperConfig 的作用
     </h1>
     <div class="post-meta">
 
-<span title='2026-09-07 00:00:00 +0000 UTC'>2026年9月7日</span>&nbsp;·&nbsp;<span>1 分钟</span>&nbsp;·&nbsp;<span>Your Name</span>
+<span title='2026-09-07 00:00:00 +0000 UTC'>2026年9月7日</span>&nbsp;·&nbsp;<span>1 分钟</span>&nbsp;·&nbsp;<span>Kelp</span>
 
 </div>
   </header> <details class="toc" >
@@ -360,18 +363,18 @@ ObjectMapperConfig 的作用
 <li>自动处理空值和默认值</li>
 </ul>
 <p>如果未来需要更复杂的配置，可以在 <code>ObjectMapperConfig</code> 中添加，例如：</p>
-<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-java" data-lang="java"><span style="display:flex;"><span><span style="color:#75af00">@Bean</span>
-</span></span><span style="display:flex;"><span><span style="color:#00a8c8">public</span> <span style="color:#111">ObjectMapper</span> <span style="color:#75af00">objectMapper</span><span style="color:#111">()</span> <span style="color:#111">{</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#111">ObjectMapper</span> <span style="color:#111">objectMapper</span> <span style="color:#f92672">=</span> <span style="color:#00a8c8">new</span> <span style="color:#111">ObjectMapper</span><span style="color:#111">();</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// 设置日期格式</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#111">objectMapper</span><span style="color:#111">.</span><span style="color:#75af00">setDateFormat</span><span style="color:#111">(</span><span style="color:#00a8c8">new</span> <span style="color:#111">SimpleDateFormat</span><span style="color:#111">(</span><span style="color:#d88200">&#34;yyyy-MM-dd HH:mm:ss&#34;</span><span style="color:#111">));</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// 忽略空值</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#111">objectMapper</span><span style="color:#111">.</span><span style="color:#75af00">setSerializationInclusion</span><span style="color:#111">(</span><span style="color:#111">Include</span><span style="color:#111">.</span><span style="color:#75af00">NON_NULL</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// 支持枚举类型</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#111">objectMapper</span><span style="color:#111">.</span><span style="color:#75af00">enable</span><span style="color:#111">(</span><span style="color:#111">SerializationFeature</span><span style="color:#111">.</span><span style="color:#75af00">INDENT_OUTPUT</span><span style="color:#111">);</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#00a8c8">return</span> <span style="color:#111">objectMapper</span><span style="color:#111">;</span>
-</span></span><span style="display:flex;"><span><span style="color:#111">}</span>
-</span></span></code></pre></div><h2 id="总结">总结<a hidden class="anchor" aria-hidden="true" href="#总结">#</a></h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="nd">@Bean</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">ObjectMapper</span><span class="w"> </span><span class="nf">objectMapper</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">ObjectMapper</span><span class="w"> </span><span class="n">objectMapper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ObjectMapper</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 设置日期格式</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">objectMapper</span><span class="p">.</span><span class="na">setDateFormat</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">SimpleDateFormat</span><span class="p">(</span><span class="s">&#34;yyyy-MM-dd HH:mm:ss&#34;</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 忽略空值</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">objectMapper</span><span class="p">.</span><span class="na">setSerializationInclusion</span><span class="p">(</span><span class="n">Include</span><span class="p">.</span><span class="na">NON_NULL</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 支持枚举类型</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">objectMapper</span><span class="p">.</span><span class="na">enable</span><span class="p">(</span><span class="n">SerializationFeature</span><span class="p">.</span><span class="na">INDENT_OUTPUT</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">objectMapper</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><h2 id="总结">总结<a hidden class="anchor" aria-hidden="true" href="#总结">#</a></h2>
 <p>ObjectMapper 用于处理 Java 对象与 JSON 数据之间的转换。在我的项目中，它主要用于与企查查 API 的交互，将 API 返回的 JSON 数据解析为 Java 对象，以便进一步处理和存储。</p>
 
 
@@ -398,7 +401,7 @@ ObjectMapperConfig 的作用
     </main>
     
 <footer class="footer">
-        <span>&copy; 2026 <a href="https://kelp-z.github.io/">我的笔记</a></span> · 
+        <span>&copy; 2026 <a href="https://kelp-z.github.io/">Kelp&#39;s Blog</a></span> · 
 
     
     
