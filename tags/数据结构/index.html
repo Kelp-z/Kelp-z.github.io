@@ -5,11 +5,11 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <meta name="robots" content="index, follow">
-<title>Spring | Kelp&#39;s Blog</title>
+<title>数据结构 | Kelp&#39;s Blog</title>
 <meta name="keywords" content="">
 <meta name="description" content="记录学习、思考与生活。">
 <meta name="author" content="Kelp">
-<link rel="canonical" href="https://kelp-z.github.io/tags/spring/">
+<link rel="canonical" href="https://kelp-z.github.io/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">
 <link crossorigin="anonymous" href="/assets/css/stylesheet.3f66b857ca63d96355c5828d832274469992e4a2dfe4266beb87974b64c1ac37.css" integrity="sha256-P2a4V8pj2WNVxYKNgyJ0RpmS5KLf5CZr64eXS2TBrDc=" rel="preload stylesheet" as="style">
 <link rel="icon" href="https://kelp-z.github.io/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="https://kelp-z.github.io/favicon-16x16.png">
@@ -18,7 +18,7 @@
 <link rel="mask-icon" href="https://kelp-z.github.io/safari-pinned-tab.svg">
 <meta name="theme-color" content="#2e2e33">
 <meta name="msapplication-TileColor" content="#2e2e33">
-<link rel="alternate" hreflang="zh" href="https://kelp-z.github.io/tags/spring/">
+<link rel="alternate" hreflang="zh" href="https://kelp-z.github.io/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">
 <noscript>
     <style>
         #theme-toggle,
@@ -65,15 +65,15 @@
     }
 
 </script><link rel="stylesheet" href="/css/extended/custom.min.27713fe4b50c6afd3229b52bfc9d3f450bd0d70bc558526eea9efd370b548e15.css" integrity="sha256-J3E/5LUMav0yKbUr/J0/RQvQ1wvFWFJu6p79NwtUjhU=">
-<meta property="og:url" content="https://kelp-z.github.io/tags/spring/">
+<meta property="og:url" content="https://kelp-z.github.io/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">
   <meta property="og:site_name" content="Kelp&#39;s Blog">
-  <meta property="og:title" content="Spring">
+  <meta property="og:title" content="数据结构">
   <meta property="og:description" content="记录学习、思考与生活。">
   <meta property="og:locale" content="zh_CN">
   <meta property="og:type" content="website">
 
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Spring">
+  <meta name="twitter:title" content="数据结构">
   <meta name="twitter:description" content="记录学习、思考与生活。">
 
 </head>
@@ -146,25 +146,28 @@
     </svg>
 </nav>
   <h1>
-    Spring
+    数据结构
   </h1>
 </header>
 
 <article class="post-entry tag-entry"> 
   <header class="entry-header">
-    <h2 class="entry-hint-parent">RestTemplate 详解
+    <h2 class="entry-hint-parent">B树
     </h2>
   </header>
   <div class="entry-content">
-    <p>RestTemplate 详解 什么是 RestTemplate RestTemplate 是 Spring 框架中用于发送 HTTP 请求的核心类，它提供了一种简洁、优雅的方式来与 RESTful API 进行交互。RestTemplate 封装了底层的 HTTP 客户端实现，提供了一系列方法来发送不同类型的 HTTP 请求（如 GET、POST、PUT、DELETE 等）。
-RestTemplate 的作用和用途 1. 调用外部 API 发送 HTTP 请求到外部 API 并获取响应 支持各种 HTTP 方法（GET、POST、PUT、DELETE 等） 自动处理请求和响应的序列化与反序列化 2. 微服务间通信 在微服务架构中，不同服务之间通过 HTTP 进行通信 RestTemplate 提供了一种统一的方式来调用其他服务的 API 3. 简化 HTTP 客户端代码 封装了底层的 HTTP 客户端实现，如 Apache HttpClient、OkHttp 等 提供了简洁的 API，避免了手动处理 HTTP 请求的复杂性 4. 支持多种数据格式 支持 JSON、XML 等多种数据格式的转换 自动处理请求体和响应体的序列化与反序列化 RestTemplateConfig 的作用 在我们的项目中，RestTemplateConfig 类的作用是：
-创建并配置 RestTemplate 实例：通过 @Bean 注解将 RestTemplate 注册为 Spring 容器中的一个 Bean，使其可以被其他组件注入和使用。
-...</p>
+    <p>B树 每个节点可以有多个子节点。假设m阶B树（m = 2t，t为最小度数），则：
+每个节点最多有m个孩子（2t个）
+除根节点外，每个节点至少有t个孩子
+每个节点的关键字数量在[t-1, 2t-1]之间
+所有叶子节点在同一层
+节点内的关键字按升序排列
+class BTree{ class BTreeNode{ private int[] keys; private BTreeNode[] children; private int t;//最小度数 private int n;//关键字的数量 private boolean leaf; BTreeNode(int t,boolean leaf){ this.t = t; this.leaf = leaf; this.keys = new int[2*t - 1]; this.children = new BTreeNode[2*t]; this.n = 0; } } int t; Node root; public BTree(int t){ this.t = t; this.root = new Node(t,true);//根节点初始为叶节点 } public BTreeNode search(int k) { return search(root, k); } private BTreeNode search(BTreeNode node, int k) { // 1. 找到第一个大于等于k的关键字的索引 int i = 0; while (i &lt; node.n &amp;&amp; k &gt; node.keys[i]) { i&#43;&#43;; } // 2. 如果找到匹配的关键字，返回当前节点 if (i &lt; node.n &amp;&amp; k == node.keys[i]) { return node; } // 3. 如果当前是叶子节点且没找到，说明k不存在 if (node.leaf) { return null; } // 4. 递归查找对应的子节点 return search(node.children[i], k); } public void insert(int k) { BTreeNode r = root; // 情况1：根节点已满（触发分裂） if (r.n == 2 * t - 1) { // 创建新的根节点（B树高度&#43;1） BTreeNode newRoot = new BTreeNode(t, false); // 原根节点变为新根的第一个孩子 newRoot.children[0] = r; // 分裂原根节点 splitChild(newRoot, 0, r); // 确定新根节点的插入位置（左或右子树） int i = 0; if (newRoot.keys[0] &lt; k) { i&#43;&#43;; } // 插入到对应的非满子节点中 insertNonFull(newRoot.children[i], k); // 更新根节点 root = newRoot; } // 情况2：根节点未满，直接插入 else { insertNonFull(r, k); } } /** * 分裂满的子节点（B树的核心操作！） * @param parent 父节点 * @param childIndex 要分裂的子节点在父节点children数组中的索引 * @param fullChild 已满的子节点（关键字数=2t-1） */ private void splitChild(BTreeNode parent, int childIndex, BTreeNode fullChild) { // 1. 创建新节点存储分裂后的右半部分 BTreeNode newNode = new BTreeNode(t, fullChild.leaf); // 分裂后每个节点的关键字数 = t-1 int mid = t - 1; // 2. 将fullChild的后t-1个关键字复制到newNode for (int i = 0; i &lt; mid; i&#43;&#43;) { newNode.keys[i] = fullChild.keys[i &#43; t]; newNode.n&#43;&#43;; // newNode的关键字数增加 } // 3. 如果fullChild不是叶子节点，复制后t个孩子到newNode if (!fullChild.leaf) { for (int i = 0; i &lt; t; i&#43;&#43;) { newNode.children[i] = fullChild.children[i &#43; t]; } } // 4. 将fullChild的关键字数更新为t-1（只保留前t-1个） fullChild.n = mid; // 5. 父节点的children数组腾出位置，插入newNode for (int i = parent.n; i &gt; childIndex; i--) { parent.children[i &#43; 1] = parent.children[i]; } parent.children[childIndex &#43; 1] = newNode; // 6. 父节点的keys数组腾出位置，插入fullChild的中间关键字 for (int i = parent.n - 1; i &gt;= childIndex; i--) { parent.keys[i &#43; 1] = parent.keys[i]; } parent.keys[childIndex] = fullChild.keys[mid]; // 中间关键字提升到父节点 parent.n&#43;&#43;; // 父节点的关键字数增加 } /** * 向非满节点插入关键字 * @param node 非满节点 * @param k 要插入的关键字 */ private void insertNonFull(BTreeNode node, int k) { // 从后往前找插入位置（保持关键字有序） int i = node.n - 1; // 情况1：当前是叶子节点，直接插入 if (node.leaf) { // 后移比k大的关键字，腾出位置 while (i &gt;= 0 &amp;&amp; node.keys[i] &gt; k) { node.keys[i &#43; 1] = node.keys[i]; i--; } // 插入关键字 node.keys[i &#43; 1] = k; node.n&#43;&#43;; } // 情况2：当前是非叶子节点，递归找子节点插入 else { // 找到对应的子节点索引 while (i &gt;= 0 &amp;&amp; node.keys[i] &gt; k) { i--; } i&#43;&#43;; // 检查子节点是否已满，如果满则先分裂 if (node.children[i].n == 2 * t - 1) { splitChild(node, i, node.children[i]); // 分裂后，可能需要调整插入位置（因为父节点新增了关键字） if (node.keys[i] &lt; k) { i&#43;&#43;; } } // 插入到子节点 insertNonFull(node.children[i], k); } } } </p>
   </div>
   <footer class="entry-footer">
 
-<span title='2026-09-07 00:00:00 +0000 UTC'>2026年9月7日</span>&nbsp;·&nbsp;<span>1 分钟</span>&nbsp;·&nbsp;<span>Kelp</span></footer>
-  <a class="entry-link" aria-label="post link to RestTemplate 详解" href="https://kelp-z.github.io/posts/resttemplate/"></a>
+<span title='2026-09-08 00:00:00 +0000 UTC'>2026年9月8日</span>&nbsp;·&nbsp;<span>3 分钟</span>&nbsp;·&nbsp;<span>Kelp</span></footer>
+  <a class="entry-link" aria-label="post link to B树" href="https://kelp-z.github.io/posts/b%E6%A0%91/"></a>
 </article>
     </main>
     

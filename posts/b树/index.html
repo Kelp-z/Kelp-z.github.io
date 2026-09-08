@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto" data-theme="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>B树 | Kelp&#39;s Blog</title>
+<meta name="keywords" content="数据结构, 树">
+<meta name="description" content="B树
+每个节点可以有多个子节点。假设m阶B树（m = 2t，t为最小度数），则：
+
+
+每个节点最多有m个孩子（2t个）
+
+
+除根节点外，每个节点至少有t个孩子
+
+
+每个节点的关键字数量在[t-1, 2t-1]之间
+
+
+所有叶子节点在同一层
+
+
+节点内的关键字按升序排列
+class BTree{
+    class BTreeNode{
+        private int[] keys;
+        private BTreeNode[] children;
+        private int t;//最小度数
+        private int n;//关键字的数量
+        private boolean leaf;
+
+        BTreeNode(int t,boolean leaf){
+            this.t = t;
+            this.leaf = leaf;
+            this.keys = new int[2*t - 1];
+            this.children = new BTreeNode[2*t];
+            this.n = 0;
+        }
+    }
+
+    int t;
+    Node root;
+
+    public BTree(int t){
+        this.t = t;
+        this.root = new Node(t,true);//根节点初始为叶节点
+    }
+
+    public BTreeNode search(int k) {
+        return search(root, k);
+    }
+
+
+    private BTreeNode search(BTreeNode node, int k) {
+        // 1. 找到第一个大于等于k的关键字的索引
+        int i = 0;
+        while (i &lt; node.n &amp;&amp; k &gt; node.keys[i]) {
+            i&#43;&#43;;
+        }
+
+        // 2. 如果找到匹配的关键字，返回当前节点
+        if (i &lt; node.n &amp;&amp; k == node.keys[i]) {
+            return node;
+        }
+
+        // 3. 如果当前是叶子节点且没找到，说明k不存在
+        if (node.leaf) {
+            return null;
+        }
+
+        // 4. 递归查找对应的子节点
+        return search(node.children[i], k);
+    }
+
+    public void insert(int k) {
+        BTreeNode r = root;
+
+        // 情况1：根节点已满（触发分裂）
+        if (r.n == 2 * t - 1) {
+            // 创建新的根节点（B树高度&#43;1）
+            BTreeNode newRoot = new BTreeNode(t, false);
+            // 原根节点变为新根的第一个孩子
+            newRoot.children[0] = r;
+            // 分裂原根节点
+            splitChild(newRoot, 0, r);
+
+            // 确定新根节点的插入位置（左或右子树）
+            int i = 0;
+            if (newRoot.keys[0] &lt; k) {
+                i&#43;&#43;;
+            }
+            // 插入到对应的非满子节点中
+            insertNonFull(newRoot.children[i], k);
+
+            // 更新根节点
+            root = newRoot;
+        } 
+        // 情况2：根节点未满，直接插入
+        else {
+            insertNonFull(r, k);
+        }
+    }
+
+    /**
+     * 分裂满的子节点（B树的核心操作！）
+     * @param parent 父节点
+     * @param childIndex 要分裂的子节点在父节点children数组中的索引
+     * @param fullChild 已满的子节点（关键字数=2t-1）
+     */
+    private void splitChild(BTreeNode parent, int childIndex, BTreeNode fullChild) {
+        // 1. 创建新节点存储分裂后的右半部分
+        BTreeNode newNode = new BTreeNode(t, fullChild.leaf);
+        // 分裂后每个节点的关键字数 = t-1
+        int mid = t - 1;
+
+        // 2. 将fullChild的后t-1个关键字复制到newNode
+        for (int i = 0; i &lt; mid; i&#43;&#43;) {
+            newNode.keys[i] = fullChild.keys[i &#43; t];
+            newNode.n&#43;&#43;; // newNode的关键字数增加
+        }
+
+        // 3. 如果fullChild不是叶子节点，复制后t个孩子到newNode
+        if (!fullChild.leaf) {
+            for (int i = 0; i &lt; t; i&#43;&#43;) {
+                newNode.children[i] = fullChild.children[i &#43; t];
+            }
+        }
+
+        // 4. 将fullChild的关键字数更新为t-1（只保留前t-1个）
+        fullChild.n = mid;
+
+        // 5. 父节点的children数组腾出位置，插入newNode
+        for (int i = parent.n; i &gt; childIndex; i--) {
+            parent.children[i &#43; 1] = parent.children[i];
+        }
+        parent.children[childIndex &#43; 1] = newNode;
+
+        // 6. 父节点的keys数组腾出位置，插入fullChild的中间关键字
+        for (int i = parent.n - 1; i &gt;= childIndex; i--) {
+            parent.keys[i &#43; 1] = parent.keys[i];
+        }
+        parent.keys[childIndex] = fullChild.keys[mid]; // 中间关键字提升到父节点
+        parent.n&#43;&#43;; // 父节点的关键字数增加
+    }
+
+    /**
+     * 向非满节点插入关键字
+     * @param node 非满节点
+     * @param k 要插入的关键字
+     */
+    private void insertNonFull(BTreeNode node, int k) {
+        // 从后往前找插入位置（保持关键字有序）
+        int i = node.n - 1;
+
+        // 情况1：当前是叶子节点，直接插入
+        if (node.leaf) {
+            // 后移比k大的关键字，腾出位置
+            while (i &gt;= 0 &amp;&amp; node.keys[i] &gt; k) {
+                node.keys[i &#43; 1] = node.keys[i];
+                i--;
+            }
+            // 插入关键字
+            node.keys[i &#43; 1] = k;
+            node.n&#43;&#43;;
+        } 
+        // 情况2：当前是非叶子节点，递归找子节点插入
+        else {
+            // 找到对应的子节点索引
+            while (i &gt;= 0 &amp;&amp; node.keys[i] &gt; k) {
+                i--;
+            }
+            i&#43;&#43;;
+
+            // 检查子节点是否已满，如果满则先分裂
+            if (node.children[i].n == 2 * t - 1) {
+                splitChild(node, i, node.children[i]);
+                // 分裂后，可能需要调整插入位置（因为父节点新增了关键字）
+                if (node.keys[i] &lt; k) {
+                    i&#43;&#43;;
+                }
+            }
+            // 插入到子节点
+            insertNonFull(node.children[i], k);
+        }
+    }
+}
+
+">
+<meta name="author" content="Kelp">
+<link rel="canonical" href="https://kelp-z.github.io/posts/b%E6%A0%91/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.3f66b857ca63d96355c5828d832274469992e4a2dfe4266beb87974b64c1ac37.css" integrity="sha256-P2a4V8pj2WNVxYKNgyJ0RpmS5KLf5CZr64eXS2TBrDc=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://kelp-z.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://kelp-z.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://kelp-z.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://kelp-z.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://kelp-z.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://kelp-z.github.io/posts/b%E6%A0%91/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script><link rel="stylesheet" href="/css/extended/custom.min.27713fe4b50c6afd3229b52bfc9d3f450bd0d70bc558526eea9efd370b548e15.css" integrity="sha256-J3E/5LUMav0yKbUr/J0/RQvQ1wvFWFJu6p79NwtUjhU=">
+<meta property="og:url" content="https://kelp-z.github.io/posts/b%E6%A0%91/">
+  <meta property="og:site_name" content="Kelp&#39;s Blog">
+  <meta property="og:title" content="B树">
+  <meta property="og:description" content="B树 每个节点可以有多个子节点。假设m阶B树（m = 2t，t为最小度数），则：
+每个节点最多有m个孩子（2t个）
+除根节点外，每个节点至少有t个孩子
+每个节点的关键字数量在[t-1, 2t-1]之间
+所有叶子节点在同一层
+节点内的关键字按升序排列
+class BTree{ class BTreeNode{ private int[] keys; private BTreeNode[] children; private int t;//最小度数 private int n;//关键字的数量 private boolean leaf; BTreeNode(int t,boolean leaf){ this.t = t; this.leaf = leaf; this.keys = new int[2*t - 1]; this.children = new BTreeNode[2*t]; this.n = 0; } } int t; Node root; public BTree(int t){ this.t = t; this.root = new Node(t,true);//根节点初始为叶节点 } public BTreeNode search(int k) { return search(root, k); } private BTreeNode search(BTreeNode node, int k) { // 1. 找到第一个大于等于k的关键字的索引 int i = 0; while (i &lt; node.n &amp;&amp; k &gt; node.keys[i]) { i&#43;&#43;; } // 2. 如果找到匹配的关键字，返回当前节点 if (i &lt; node.n &amp;&amp; k == node.keys[i]) { return node; } // 3. 如果当前是叶子节点且没找到，说明k不存在 if (node.leaf) { return null; } // 4. 递归查找对应的子节点 return search(node.children[i], k); } public void insert(int k) { BTreeNode r = root; // 情况1：根节点已满（触发分裂） if (r.n == 2 * t - 1) { // 创建新的根节点（B树高度&#43;1） BTreeNode newRoot = new BTreeNode(t, false); // 原根节点变为新根的第一个孩子 newRoot.children[0] = r; // 分裂原根节点 splitChild(newRoot, 0, r); // 确定新根节点的插入位置（左或右子树） int i = 0; if (newRoot.keys[0] &lt; k) { i&#43;&#43;; } // 插入到对应的非满子节点中 insertNonFull(newRoot.children[i], k); // 更新根节点 root = newRoot; } // 情况2：根节点未满，直接插入 else { insertNonFull(r, k); } } /** * 分裂满的子节点（B树的核心操作！） * @param parent 父节点 * @param childIndex 要分裂的子节点在父节点children数组中的索引 * @param fullChild 已满的子节点（关键字数=2t-1） */ private void splitChild(BTreeNode parent, int childIndex, BTreeNode fullChild) { // 1. 创建新节点存储分裂后的右半部分 BTreeNode newNode = new BTreeNode(t, fullChild.leaf); // 分裂后每个节点的关键字数 = t-1 int mid = t - 1; // 2. 将fullChild的后t-1个关键字复制到newNode for (int i = 0; i &lt; mid; i&#43;&#43;) { newNode.keys[i] = fullChild.keys[i &#43; t]; newNode.n&#43;&#43;; // newNode的关键字数增加 } // 3. 如果fullChild不是叶子节点，复制后t个孩子到newNode if (!fullChild.leaf) { for (int i = 0; i &lt; t; i&#43;&#43;) { newNode.children[i] = fullChild.children[i &#43; t]; } } // 4. 将fullChild的关键字数更新为t-1（只保留前t-1个） fullChild.n = mid; // 5. 父节点的children数组腾出位置，插入newNode for (int i = parent.n; i &gt; childIndex; i--) { parent.children[i &#43; 1] = parent.children[i]; } parent.children[childIndex &#43; 1] = newNode; // 6. 父节点的keys数组腾出位置，插入fullChild的中间关键字 for (int i = parent.n - 1; i &gt;= childIndex; i--) { parent.keys[i &#43; 1] = parent.keys[i]; } parent.keys[childIndex] = fullChild.keys[mid]; // 中间关键字提升到父节点 parent.n&#43;&#43;; // 父节点的关键字数增加 } /** * 向非满节点插入关键字 * @param node 非满节点 * @param k 要插入的关键字 */ private void insertNonFull(BTreeNode node, int k) { // 从后往前找插入位置（保持关键字有序） int i = node.n - 1; // 情况1：当前是叶子节点，直接插入 if (node.leaf) { // 后移比k大的关键字，腾出位置 while (i &gt;= 0 &amp;&amp; node.keys[i] &gt; k) { node.keys[i &#43; 1] = node.keys[i]; i--; } // 插入关键字 node.keys[i &#43; 1] = k; node.n&#43;&#43;; } // 情况2：当前是非叶子节点，递归找子节点插入 else { // 找到对应的子节点索引 while (i &gt;= 0 &amp;&amp; node.keys[i] &gt; k) { i--; } i&#43;&#43;; // 检查子节点是否已满，如果满则先分裂 if (node.children[i].n == 2 * t - 1) { splitChild(node, i, node.children[i]); // 分裂后，可能需要调整插入位置（因为父节点新增了关键字） if (node.keys[i] &lt; k) { i&#43;&#43;; } } // 插入到子节点 insertNonFull(node.children[i], k); } } }">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2026-09-08T00:00:00+00:00">
+    <meta property="article:modified_time" content="2026-09-08T00:00:00+00:00">
+    <meta property="article:tag" content="数据结构">
+    <meta property="article:tag" content="树">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="B树">
+  <meta name="twitter:description" content="B树 每个节点可以有多个子节点。假设m阶B树（m = 2t，t为最小度数），则：
+每个节点最多有m个孩子（2t个）
+除根节点外，每个节点至少有t个孩子
+每个节点的关键字数量在[t-1, 2t-1]之间
+所有叶子节点在同一层
+节点内的关键字按升序排列
+class BTree{ class BTreeNode{ private int[] keys; private BTreeNode[] children; private int t;//最小度数 private int n;//关键字的数量 private boolean leaf; BTreeNode(int t,boolean leaf){ this.t = t; this.leaf = leaf; this.keys = new int[2*t - 1]; this.children = new BTreeNode[2*t]; this.n = 0; } } int t; Node root; public BTree(int t){ this.t = t; this.root = new Node(t,true);//根节点初始为叶节点 } public BTreeNode search(int k) { return search(root, k); } private BTreeNode search(BTreeNode node, int k) { // 1. 找到第一个大于等于k的关键字的索引 int i = 0; while (i &lt; node.n &amp;&amp; k &gt; node.keys[i]) { i&#43;&#43;; } // 2. 如果找到匹配的关键字，返回当前节点 if (i &lt; node.n &amp;&amp; k == node.keys[i]) { return node; } // 3. 如果当前是叶子节点且没找到，说明k不存在 if (node.leaf) { return null; } // 4. 递归查找对应的子节点 return search(node.children[i], k); } public void insert(int k) { BTreeNode r = root; // 情况1：根节点已满（触发分裂） if (r.n == 2 * t - 1) { // 创建新的根节点（B树高度&#43;1） BTreeNode newRoot = new BTreeNode(t, false); // 原根节点变为新根的第一个孩子 newRoot.children[0] = r; // 分裂原根节点 splitChild(newRoot, 0, r); // 确定新根节点的插入位置（左或右子树） int i = 0; if (newRoot.keys[0] &lt; k) { i&#43;&#43;; } // 插入到对应的非满子节点中 insertNonFull(newRoot.children[i], k); // 更新根节点 root = newRoot; } // 情况2：根节点未满，直接插入 else { insertNonFull(r, k); } } /** * 分裂满的子节点（B树的核心操作！） * @param parent 父节点 * @param childIndex 要分裂的子节点在父节点children数组中的索引 * @param fullChild 已满的子节点（关键字数=2t-1） */ private void splitChild(BTreeNode parent, int childIndex, BTreeNode fullChild) { // 1. 创建新节点存储分裂后的右半部分 BTreeNode newNode = new BTreeNode(t, fullChild.leaf); // 分裂后每个节点的关键字数 = t-1 int mid = t - 1; // 2. 将fullChild的后t-1个关键字复制到newNode for (int i = 0; i &lt; mid; i&#43;&#43;) { newNode.keys[i] = fullChild.keys[i &#43; t]; newNode.n&#43;&#43;; // newNode的关键字数增加 } // 3. 如果fullChild不是叶子节点，复制后t个孩子到newNode if (!fullChild.leaf) { for (int i = 0; i &lt; t; i&#43;&#43;) { newNode.children[i] = fullChild.children[i &#43; t]; } } // 4. 将fullChild的关键字数更新为t-1（只保留前t-1个） fullChild.n = mid; // 5. 父节点的children数组腾出位置，插入newNode for (int i = parent.n; i &gt; childIndex; i--) { parent.children[i &#43; 1] = parent.children[i]; } parent.children[childIndex &#43; 1] = newNode; // 6. 父节点的keys数组腾出位置，插入fullChild的中间关键字 for (int i = parent.n - 1; i &gt;= childIndex; i--) { parent.keys[i &#43; 1] = parent.keys[i]; } parent.keys[childIndex] = fullChild.keys[mid]; // 中间关键字提升到父节点 parent.n&#43;&#43;; // 父节点的关键字数增加 } /** * 向非满节点插入关键字 * @param node 非满节点 * @param k 要插入的关键字 */ private void insertNonFull(BTreeNode node, int k) { // 从后往前找插入位置（保持关键字有序） int i = node.n - 1; // 情况1：当前是叶子节点，直接插入 if (node.leaf) { // 后移比k大的关键字，腾出位置 while (i &gt;= 0 &amp;&amp; node.keys[i] &gt; k) { node.keys[i &#43; 1] = node.keys[i]; i--; } // 插入关键字 node.keys[i &#43; 1] = k; node.n&#43;&#43;; } // 情况2：当前是非叶子节点，递归找子节点插入 else { // 找到对应的子节点索引 while (i &gt;= 0 &amp;&amp; node.keys[i] &gt; k) { i--; } i&#43;&#43;; // 检查子节点是否已满，如果满则先分裂 if (node.children[i].n == 2 * t - 1) { splitChild(node, i, node.children[i]); // 分裂后，可能需要调整插入位置（因为父节点新增了关键字） if (node.keys[i] &lt; k) { i&#43;&#43;; } } // 插入到子节点 insertNonFull(node.children[i], k); } } }">
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "文章",
+      "item": "https://kelp-z.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "B树",
+      "item": "https://kelp-z.github.io/posts/b%E6%A0%91/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "B树",
+  "name": "B树",
+  "description": "B树 每个节点可以有多个子节点。假设m阶B树（m = 2t，t为最小度数），则：\n每个节点最多有m个孩子（2t个）\n除根节点外，每个节点至少有t个孩子\n每个节点的关键字数量在[t-1, 2t-1]之间\n所有叶子节点在同一层\n节点内的关键字按升序排列\nclass BTree{ class BTreeNode{ private int[] keys; private BTreeNode[] children; private int t;//最小度数 private int n;//关键字的数量 private boolean leaf; BTreeNode(int t,boolean leaf){ this.t = t; this.leaf = leaf; this.keys = new int[2*t - 1]; this.children = new BTreeNode[2*t]; this.n = 0; } } int t; Node root; public BTree(int t){ this.t = t; this.root = new Node(t,true);//根节点初始为叶节点 } public BTreeNode search(int k) { return search(root, k); } private BTreeNode search(BTreeNode node, int k) { // 1. 找到第一个大于等于k的关键字的索引 int i = 0; while (i \u0026lt; node.n \u0026amp;\u0026amp; k \u0026gt; node.keys[i]) { i++; } // 2. 如果找到匹配的关键字，返回当前节点 if (i \u0026lt; node.n \u0026amp;\u0026amp; k == node.keys[i]) { return node; } // 3. 如果当前是叶子节点且没找到，说明k不存在 if (node.leaf) { return null; } // 4. 递归查找对应的子节点 return search(node.children[i], k); } public void insert(int k) { BTreeNode r = root; // 情况1：根节点已满（触发分裂） if (r.n == 2 * t - 1) { // 创建新的根节点（B树高度+1） BTreeNode newRoot = new BTreeNode(t, false); // 原根节点变为新根的第一个孩子 newRoot.children[0] = r; // 分裂原根节点 splitChild(newRoot, 0, r); // 确定新根节点的插入位置（左或右子树） int i = 0; if (newRoot.keys[0] \u0026lt; k) { i++; } // 插入到对应的非满子节点中 insertNonFull(newRoot.children[i], k); // 更新根节点 root = newRoot; } // 情况2：根节点未满，直接插入 else { insertNonFull(r, k); } } /** * 分裂满的子节点（B树的核心操作！） * @param parent 父节点 * @param childIndex 要分裂的子节点在父节点children数组中的索引 * @param fullChild 已满的子节点（关键字数=2t-1） */ private void splitChild(BTreeNode parent, int childIndex, BTreeNode fullChild) { // 1. 创建新节点存储分裂后的右半部分 BTreeNode newNode = new BTreeNode(t, fullChild.leaf); // 分裂后每个节点的关键字数 = t-1 int mid = t - 1; // 2. 将fullChild的后t-1个关键字复制到newNode for (int i = 0; i \u0026lt; mid; i++) { newNode.keys[i] = fullChild.keys[i + t]; newNode.n++; // newNode的关键字数增加 } // 3. 如果fullChild不是叶子节点，复制后t个孩子到newNode if (!fullChild.leaf) { for (int i = 0; i \u0026lt; t; i++) { newNode.children[i] = fullChild.children[i + t]; } } // 4. 将fullChild的关键字数更新为t-1（只保留前t-1个） fullChild.n = mid; // 5. 父节点的children数组腾出位置，插入newNode for (int i = parent.n; i \u0026gt; childIndex; i--) { parent.children[i + 1] = parent.children[i]; } parent.children[childIndex + 1] = newNode; // 6. 父节点的keys数组腾出位置，插入fullChild的中间关键字 for (int i = parent.n - 1; i \u0026gt;= childIndex; i--) { parent.keys[i + 1] = parent.keys[i]; } parent.keys[childIndex] = fullChild.keys[mid]; // 中间关键字提升到父节点 parent.n++; // 父节点的关键字数增加 } /** * 向非满节点插入关键字 * @param node 非满节点 * @param k 要插入的关键字 */ private void insertNonFull(BTreeNode node, int k) { // 从后往前找插入位置（保持关键字有序） int i = node.n - 1; // 情况1：当前是叶子节点，直接插入 if (node.leaf) { // 后移比k大的关键字，腾出位置 while (i \u0026gt;= 0 \u0026amp;\u0026amp; node.keys[i] \u0026gt; k) { node.keys[i + 1] = node.keys[i]; i--; } // 插入关键字 node.keys[i + 1] = k; node.n++; } // 情况2：当前是非叶子节点，递归找子节点插入 else { // 找到对应的子节点索引 while (i \u0026gt;= 0 \u0026amp;\u0026amp; node.keys[i] \u0026gt; k) { i--; } i++; // 检查子节点是否已满，如果满则先分裂 if (node.children[i].n == 2 * t - 1) { splitChild(node, i, node.children[i]); // 分裂后，可能需要调整插入位置（因为父节点新增了关键字） if (node.keys[i] \u0026lt; k) { i++; } } // 插入到子节点 insertNonFull(node.children[i], k); } } } ",
+  "keywords": [
+    "数据结构", "树"
+  ],
+  "articleBody": "B树 每个节点可以有多个子节点。假设m阶B树（m = 2t，t为最小度数），则：\n每个节点最多有m个孩子（2t个）\n除根节点外，每个节点至少有t个孩子\n每个节点的关键字数量在[t-1, 2t-1]之间\n所有叶子节点在同一层\n节点内的关键字按升序排列\nclass BTree{ class BTreeNode{ private int[] keys; private BTreeNode[] children; private int t;//最小度数 private int n;//关键字的数量 private boolean leaf; BTreeNode(int t,boolean leaf){ this.t = t; this.leaf = leaf; this.keys = new int[2*t - 1]; this.children = new BTreeNode[2*t]; this.n = 0; } } int t; Node root; public BTree(int t){ this.t = t; this.root = new Node(t,true);//根节点初始为叶节点 } public BTreeNode search(int k) { return search(root, k); } private BTreeNode search(BTreeNode node, int k) { // 1. 找到第一个大于等于k的关键字的索引 int i = 0; while (i \u003c node.n \u0026\u0026 k \u003e node.keys[i]) { i++; } // 2. 如果找到匹配的关键字，返回当前节点 if (i \u003c node.n \u0026\u0026 k == node.keys[i]) { return node; } // 3. 如果当前是叶子节点且没找到，说明k不存在 if (node.leaf) { return null; } // 4. 递归查找对应的子节点 return search(node.children[i], k); } public void insert(int k) { BTreeNode r = root; // 情况1：根节点已满（触发分裂） if (r.n == 2 * t - 1) { // 创建新的根节点（B树高度+1） BTreeNode newRoot = new BTreeNode(t, false); // 原根节点变为新根的第一个孩子 newRoot.children[0] = r; // 分裂原根节点 splitChild(newRoot, 0, r); // 确定新根节点的插入位置（左或右子树） int i = 0; if (newRoot.keys[0] \u003c k) { i++; } // 插入到对应的非满子节点中 insertNonFull(newRoot.children[i], k); // 更新根节点 root = newRoot; } // 情况2：根节点未满，直接插入 else { insertNonFull(r, k); } } /** * 分裂满的子节点（B树的核心操作！） * @param parent 父节点 * @param childIndex 要分裂的子节点在父节点children数组中的索引 * @param fullChild 已满的子节点（关键字数=2t-1） */ private void splitChild(BTreeNode parent, int childIndex, BTreeNode fullChild) { // 1. 创建新节点存储分裂后的右半部分 BTreeNode newNode = new BTreeNode(t, fullChild.leaf); // 分裂后每个节点的关键字数 = t-1 int mid = t - 1; // 2. 将fullChild的后t-1个关键字复制到newNode for (int i = 0; i \u003c mid; i++) { newNode.keys[i] = fullChild.keys[i + t]; newNode.n++; // newNode的关键字数增加 } // 3. 如果fullChild不是叶子节点，复制后t个孩子到newNode if (!fullChild.leaf) { for (int i = 0; i \u003c t; i++) { newNode.children[i] = fullChild.children[i + t]; } } // 4. 将fullChild的关键字数更新为t-1（只保留前t-1个） fullChild.n = mid; // 5. 父节点的children数组腾出位置，插入newNode for (int i = parent.n; i \u003e childIndex; i--) { parent.children[i + 1] = parent.children[i]; } parent.children[childIndex + 1] = newNode; // 6. 父节点的keys数组腾出位置，插入fullChild的中间关键字 for (int i = parent.n - 1; i \u003e= childIndex; i--) { parent.keys[i + 1] = parent.keys[i]; } parent.keys[childIndex] = fullChild.keys[mid]; // 中间关键字提升到父节点 parent.n++; // 父节点的关键字数增加 } /** * 向非满节点插入关键字 * @param node 非满节点 * @param k 要插入的关键字 */ private void insertNonFull(BTreeNode node, int k) { // 从后往前找插入位置（保持关键字有序） int i = node.n - 1; // 情况1：当前是叶子节点，直接插入 if (node.leaf) { // 后移比k大的关键字，腾出位置 while (i \u003e= 0 \u0026\u0026 node.keys[i] \u003e k) { node.keys[i + 1] = node.keys[i]; i--; } // 插入关键字 node.keys[i + 1] = k; node.n++; } // 情况2：当前是非叶子节点，递归找子节点插入 else { // 找到对应的子节点索引 while (i \u003e= 0 \u0026\u0026 node.keys[i] \u003e k) { i--; } i++; // 检查子节点是否已满，如果满则先分裂 if (node.children[i].n == 2 * t - 1) { splitChild(node, i, node.children[i]); // 分裂后，可能需要调整插入位置（因为父节点新增了关键字） if (node.keys[i] \u003c k) { i++; } } // 插入到子节点 insertNonFull(node.children[i], k); } } } ",
+  "wordCount" : "459",
+  "inLanguage": "zh",
+  "datePublished": "2026-09-08T00:00:00Z",
+  "dateModified": "2026-09-08T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "Kelp"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://kelp-z.github.io/posts/b%E6%A0%91/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Kelp's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://kelp-z.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+<body id="top">
+    <header class="header">
+    <nav class="header-nav">
+        <div class="logo">
+            <a href="https://kelp-z.github.io/" accesskey="h" title="Kelp&#39;s Blog (Alt + H)">
+                        
+                    <img src="https://kelp-z.github.io/images/jerry-avatar_hu_6a3ecb67e03d750e.png" alt="" aria-label="logo"
+                        height="42">Kelp&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg class="sun" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu" class="menu">
+            <li>
+                <a href="https://kelp-z.github.io/posts/" title="文章">
+                    <span>文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/archive/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/about/" title="关于">
+                    <span>关于</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <nav class="breadcrumbs" role="navigation" aria-label="Breadcrumb">
+            <a href="/">主页</a>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right">
+                <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+            <a href="/posts/">文章</a>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right">
+        <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+</nav>
+    <h1 class="post-title entry-hint-parent">
+      B树
+    </h1>
+    <div class="post-meta">
+
+<span title='2026-09-08 00:00:00 +0000 UTC'>2026年9月8日</span>&nbsp;·&nbsp;<span>3 分钟</span>&nbsp;·&nbsp;<span>Kelp</span>
+
+</div>
+  </header> <details class="toc" >
+    <summary accesskey="c" title="(Alt + C)">
+        <span class="title">目录</span>
+    </summary>
+
+    <div class="inner"><ul>
+            <li>
+                <a href="#b%e6%a0%91" aria-label="B树">B树</a>
+            </li>
+        </ul>
+    </div>
+</details>
+
+  <div class="post-content md-content"><h2 id="b树">B树<a hidden class="anchor" aria-hidden="true" href="#b树">#</a></h2>
+<p>每个节点可以有多个子节点。假设m阶B树（m = 2t，t为最小度数），则：</p>
+<ul>
+<li>
+<p>每个节点最多有<code>m</code>个孩子（<code>2t</code>个）</p>
+</li>
+<li>
+<p>除根节点外，每个节点至少有<code>t</code>个孩子</p>
+</li>
+<li>
+<p>每个节点的关键字数量在<code>[t-1, 2t-1]</code>之间</p>
+</li>
+<li>
+<p>所有叶子节点在同一层</p>
+</li>
+<li>
+<p>节点内的关键字按升序排列</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">class</span> <span class="nc">BTree</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">class</span> <span class="nc">BTreeNode</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kd">private</span><span class="w"> </span><span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">keys</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kd">private</span><span class="w"> </span><span class="n">BTreeNode</span><span class="o">[]</span><span class="w"> </span><span class="n">children</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kd">private</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">t</span><span class="p">;</span><span class="c1">//最小度数</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kd">private</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="c1">//关键字的数量</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kd">private</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="n">leaf</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">BTreeNode</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">t</span><span class="p">,</span><span class="kt">boolean</span><span class="w"> </span><span class="n">leaf</span><span class="p">){</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="na">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">t</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="na">leaf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">leaf</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="na">keys</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[</span><span class="n">2</span><span class="o">*</span><span class="n">t</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">1</span><span class="o">]</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="na">children</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">BTreeNode</span><span class="o">[</span><span class="n">2</span><span class="o">*</span><span class="n">t</span><span class="o">]</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="na">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">0</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">t</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Node</span><span class="w"> </span><span class="n">root</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">BTree</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">t</span><span class="p">){</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">t</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">root</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Node</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="kc">true</span><span class="p">);</span><span class="c1">//根节点初始为叶节点</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">BTreeNode</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">search</span><span class="p">(</span><span class="n">root</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">BTreeNode</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="n">BTreeNode</span><span class="w"> </span><span class="n">node</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 1. 找到第一个大于等于k的关键字的索引</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">0</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">node</span><span class="p">.</span><span class="na">n</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">node</span><span class="p">.</span><span class="na">keys</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">i</span><span class="o">++</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 2. 如果找到匹配的关键字，返回当前节点</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">node</span><span class="p">.</span><span class="na">n</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">node</span><span class="p">.</span><span class="na">keys</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">node</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 3. 如果当前是叶子节点且没找到，说明k不存在</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">node</span><span class="p">.</span><span class="na">leaf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="kc">null</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 4. 递归查找对应的子节点</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">search</span><span class="p">(</span><span class="n">node</span><span class="p">.</span><span class="na">children</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">insert</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">BTreeNode</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">root</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 情况1：根节点已满（触发分裂）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="na">n</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// 创建新的根节点（B树高度+1）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">BTreeNode</span><span class="w"> </span><span class="n">newRoot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">BTreeNode</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="kc">false</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// 原根节点变为新根的第一个孩子</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">newRoot</span><span class="p">.</span><span class="na">children</span><span class="o">[</span><span class="n">0</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">r</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// 分裂原根节点</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">splitChild</span><span class="p">(</span><span class="n">newRoot</span><span class="p">,</span><span class="w"> </span><span class="n">0</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// 确定新根节点的插入位置（左或右子树）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">0</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">newRoot</span><span class="p">.</span><span class="na">keys</span><span class="o">[</span><span class="n">0</span><span class="o">]</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">i</span><span class="o">++</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// 插入到对应的非满子节点中</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">insertNonFull</span><span class="p">(</span><span class="n">newRoot</span><span class="p">.</span><span class="na">children</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// 更新根节点</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">root</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">newRoot</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 情况2：根节点未满，直接插入</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">insertNonFull</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * 分裂满的子节点（B树的核心操作！）
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * @param parent 父节点
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * @param childIndex 要分裂的子节点在父节点children数组中的索引
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * @param fullChild 已满的子节点（关键字数=2t-1）
+</span></span></span><span class="line"><span class="cl"><span class="cm">     */</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">splitChild</span><span class="p">(</span><span class="n">BTreeNode</span><span class="w"> </span><span class="n">parent</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">childIndex</span><span class="p">,</span><span class="w"> </span><span class="n">BTreeNode</span><span class="w"> </span><span class="n">fullChild</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 1. 创建新节点存储分裂后的右半部分</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">BTreeNode</span><span class="w"> </span><span class="n">newNode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">BTreeNode</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="n">fullChild</span><span class="p">.</span><span class="na">leaf</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 分裂后每个节点的关键字数 = t-1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">mid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">1</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 2. 将fullChild的后t-1个关键字复制到newNode</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">mid</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">newNode</span><span class="p">.</span><span class="na">keys</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fullChild</span><span class="p">.</span><span class="na">keys</span><span class="o">[</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">t</span><span class="o">]</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">newNode</span><span class="p">.</span><span class="na">n</span><span class="o">++</span><span class="p">;</span><span class="w"> </span><span class="c1">// newNode的关键字数增加</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 3. 如果fullChild不是叶子节点，复制后t个孩子到newNode</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">fullChild</span><span class="p">.</span><span class="na">leaf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">t</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">newNode</span><span class="p">.</span><span class="na">children</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fullChild</span><span class="p">.</span><span class="na">children</span><span class="o">[</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">t</span><span class="o">]</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 4. 将fullChild的关键字数更新为t-1（只保留前t-1个）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">fullChild</span><span class="p">.</span><span class="na">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mid</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 5. 父节点的children数组腾出位置，插入newNode</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parent</span><span class="p">.</span><span class="na">n</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">childIndex</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">--</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">parent</span><span class="p">.</span><span class="na">children</span><span class="o">[</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">1</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parent</span><span class="p">.</span><span class="na">children</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">parent</span><span class="p">.</span><span class="na">children</span><span class="o">[</span><span class="n">childIndex</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">1</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">newNode</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 6. 父节点的keys数组腾出位置，插入fullChild的中间关键字</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parent</span><span class="p">.</span><span class="na">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">1</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">childIndex</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">--</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">parent</span><span class="p">.</span><span class="na">keys</span><span class="o">[</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">1</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parent</span><span class="p">.</span><span class="na">keys</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">parent</span><span class="p">.</span><span class="na">keys</span><span class="o">[</span><span class="n">childIndex</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fullChild</span><span class="p">.</span><span class="na">keys</span><span class="o">[</span><span class="n">mid</span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="c1">// 中间关键字提升到父节点</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">parent</span><span class="p">.</span><span class="na">n</span><span class="o">++</span><span class="p">;</span><span class="w"> </span><span class="c1">// 父节点的关键字数增加</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * 向非满节点插入关键字
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * @param node 非满节点
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * @param k 要插入的关键字
+</span></span></span><span class="line"><span class="cl"><span class="cm">     */</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">insertNonFull</span><span class="p">(</span><span class="n">BTreeNode</span><span class="w"> </span><span class="n">node</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 从后往前找插入位置（保持关键字有序）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">node</span><span class="p">.</span><span class="na">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">1</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 情况1：当前是叶子节点，直接插入</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">node</span><span class="p">.</span><span class="na">leaf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// 后移比k大的关键字，腾出位置</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">0</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">node</span><span class="p">.</span><span class="na">keys</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">node</span><span class="p">.</span><span class="na">keys</span><span class="o">[</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">1</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">node</span><span class="p">.</span><span class="na">keys</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">i</span><span class="o">--</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// 插入关键字</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">node</span><span class="p">.</span><span class="na">keys</span><span class="o">[</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">1</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">k</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">node</span><span class="p">.</span><span class="na">n</span><span class="o">++</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 情况2：当前是非叶子节点，递归找子节点插入</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// 找到对应的子节点索引</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">0</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">node</span><span class="p">.</span><span class="na">keys</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">i</span><span class="o">--</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">i</span><span class="o">++</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// 检查子节点是否已满，如果满则先分裂</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">node</span><span class="p">.</span><span class="na">children</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">.</span><span class="na">n</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">splitChild</span><span class="p">(</span><span class="n">node</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">node</span><span class="p">.</span><span class="na">children</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="c1">// 分裂后，可能需要调整插入位置（因为父节点新增了关键字）</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">node</span><span class="p">.</span><span class="na">keys</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="n">i</span><span class="o">++</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// 插入到子节点</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">insertNonFull</span><span class="p">(</span><span class="n">node</span><span class="p">.</span><span class="na">children</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div></li>
+</ul>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://kelp-z.github.io/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">数据结构</a></li>
+      <li><a href="https://kelp-z.github.io/tags/%E6%A0%91/">树</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="next" href="https://kelp-z.github.io/posts/mysql%E7%B4%A2%E5%BC%95%E4%BD%BF%E7%94%A8%E8%A7%84%E5%88%99/">
+    <span class="title">下一页 »</span>
+    <span>MySQL索引使用规则</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="https://kelp-z.github.io/">Kelp&#39;s Blog</a></span> · 
+
+    
+    
+    <span>
+        Powered by
+        <a href="https://gohugo.io/?utm_source=papermod" rel="noopener" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" id="top-link" class="top-link hidden" aria-label="go to top" title="Go to Top (Alt + G)" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-up">
+        <polyline points="17 11 12 6 7 11"></polyline>
+        <polyline points="17 18 12 13 7 18"></polyline>
+    </svg>
+</a><script>
+    document.addEventListener("click", function (event) {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+        const target = event.target.closest("a, button");
+        if (!target) return;
+
+        const ripple = document.createElement("span");
+        ripple.className = "click-ripple";
+        ripple.style.left = `${event.clientX}px`;
+        ripple.style.top = `${event.clientY}px`;
+        document.body.appendChild(ripple);
+        ripple.addEventListener("animationend", () => ripple.remove(), { once: true });
+    });
+</script>
+
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var toplink = document.getElementById("top-link");
+    window.onscroll = function () {
+        const scrollThreshold = window.innerHeight;
+        if (document.body.scrollTop > scrollThreshold || document.documentElement.scrollTop > scrollThreshold) {
+            toplink.classList.remove("hidden");
+        } else {
+            toplink.classList.add("hidden");
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>
