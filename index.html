@@ -2,7 +2,7 @@
 <html lang="zh" dir="auto" data-theme="auto">
 
 <head>
-	<meta name="generator" content="Hugo 0.165.0"><meta charset="utf-8">
+	<meta name="generator" content="Hugo 0.166.0"><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <meta name="robots" content="index, follow">
@@ -101,7 +101,7 @@
         <div class="logo">
             <a href="https://kelp-z.github.io/" accesskey="h" title="Kelp&#39;s Blog (Alt + H)">
                         
-                    <img src="https://kelp-z.github.io/images/jerry-avatar_hu_6a3ecb67e03d750e.png" alt="" aria-label="logo"
+                    <img src="https://kelp-z.github.io/images/jerry-avatar_hu_c47b23cfb79a27ab.png" alt="" aria-label="logo"
                         height="42">Kelp&#39;s Blog</a>
             <div class="logo-switches">
                 <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
@@ -179,6 +179,26 @@
 </div>
 
     </footer>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">spm系统的PaperLens本地部署完整指南
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、这篇文章解决什么问题 PaperLens 是一个稿件元数据核校系统：接入方提交 PDF 或 DOCX，系统在后台完成文件转换、GROBID 结构化解析、参考文献字段解析，然后在独立的浏览器窗口中让编辑核对标题、作者、摘要、关键词、参考文献、声明和统计信息。
+本文记录我在 Windows 本地完成部署的全过程：
+启动 GROBID、DOCX 转 PDF、paper-meta 等依赖服务； 启动 PaperLens 的前端和 API； 打开接入方测试控制台并创建稿件任务； 理解各个端口和容器的作用； 遇到配置、镜像、端口和旧任务问题时知道如何处理。 本文采用“依赖服务用 Docker、PaperLens 主程序用 npm run dev”的方式。
+二、PaperLens 与 paper-meta 的关系 paperlens\ paper-metadata-9-2.zip 解压后的 PaperLens 主项目 paper_meta\ paper-meta 参考文献解析服务/模型项目 PaperLens 是主系统，负责页面、任务队列、文件处理、GROBID 调用和人工核校；paper-meta 是一个独立的参考文献字段解析器，负责从 GROBID 切出的参考文献原文中提取作者、标题、期刊、年份、卷期、页码、DOI 和文献类型等字段。
+处理关系如下：
+PDF/DOCX │ ├─ converter：DOCX → PDF ├─ GROBID：PDF → TEI、正文结构、参考文献原文和坐标 └─ paper-meta：参考文献原文 → 结构化字段 GROBID 提供参考文献在 PDF 中的坐标，paper-meta 不提供坐标；两者不能互相替代。
+...</p>
+  </div>
+  <footer class="entry-footer">
+
+<span title='2026-09-13 16:00:00 +0800 +0800'>2026年9月13日</span>&nbsp;·&nbsp;<span>5 分钟</span>&nbsp;·&nbsp;<span>Kelp</span></footer>
+  <a class="entry-link" aria-label="post link to spm系统的PaperLens本地部署完整指南" href="https://kelp-z.github.io/posts/paperlens%E6%9C%AC%E5%9C%B0%E9%83%A8%E7%BD%B2%E5%AE%8C%E6%95%B4%E6%8C%87%E5%8D%97/"></a>
 </article>
 
 <article class="post-entry"> 
