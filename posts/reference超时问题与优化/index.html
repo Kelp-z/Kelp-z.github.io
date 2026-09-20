@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto" data-theme="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Reference超时问题与优化 | Kelp&#39;s Blog</title>
+<meta name="keywords" content="">
+<meta name="description" content="一.点击reference超时问题
+1.问题描述
+​	点击reference时会报超时错误，且reference无法正常展示
+2.原因分析
+​	造成这个问题的原因是：
+​		1.页面请求和Crossref派发耦合：
+​			用户只是打开 References 页面，后端就会同步执行待处理引用的派发逻辑，“准备任务、查缓存、更新状态、写入队列”这些步骤仍然发生在当前 HTTP 请求中，所以引用的文献越多，处理的时间越长
+​		2.后台队列扫描读取了不必要的大字段
+​			定时任务查询是：
+SELECT *
+FROM spm_references
+​			Crossref派发只需要部分字段，而查询整张表的方式会增加数据库的查询成本
+3.解决方法
+3.1 页面加载不再派发 Crossref
+现在打开 References 页面只做：
+
+查询当前解析版本；
+查询参考文献；
+查询作者和作者匹配关系；
+计算统计指标；
+组装并返回页面数据。
+
+这样页面响应时间不会再直接受待检索引用数量影响。
+3.2 Crossref 改由定时任务后台派发
+由定时任务扫描待处理引用：
+@Scheduled(fixedDelay = 10000)
+public void dispatchPending()
+修改后每 10 秒扫描一次，每批最多处理 60 条，然后将任务放入检索队列。
+因此流程变成：
+用户打开 References
+        |
+        |-- 只查询并展示数据，快速返回
+        |
+后台定时任务
+        |
+        |-- 扫描 PENDING / PARTIAL / NOT_REQUESTED
+        |-- 派发 Crossref/OpenAlex
+        |-- 异步回写检索结果
+        |
+前端轮询
+        |
+        |-- 刷新最新检索状态
+页面和检索任务由同步关系改成了异步关系。">
+<meta name="author" content="Kelp">
+<link rel="canonical" href="https://kelp-z.github.io/posts/reference%E8%B6%85%E6%97%B6%E9%97%AE%E9%A2%98%E4%B8%8E%E4%BC%98%E5%8C%96/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.59be42353eb383be08f2ef1e22c24b66949e288239f6531d5833adbbbb6c8688.css" integrity="sha256-Wb5CNT6zg74I8u8eIsJLZpSeKII59lMdWDOtu7tshog=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://kelp-z.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://kelp-z.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://kelp-z.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://kelp-z.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://kelp-z.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://kelp-z.github.io/posts/reference%E8%B6%85%E6%97%B6%E9%97%AE%E9%A2%98%E4%B8%8E%E4%BC%98%E5%8C%96/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script><link rel="stylesheet" href="/css/extended/custom.min.81c108bc0f646cc13dc17f8dcbc1e5237d6de6c73ce2a9f96fac8dcdcf313d44.css" integrity="sha256-gcEIvA9kbME9wX&#43;Ny8HlI31t5sc84qn5b6yNzc8xPUQ=">
+<meta property="og:url" content="https://kelp-z.github.io/posts/reference%E8%B6%85%E6%97%B6%E9%97%AE%E9%A2%98%E4%B8%8E%E4%BC%98%E5%8C%96/">
+  <meta property="og:site_name" content="Kelp&#39;s Blog">
+  <meta property="og:title" content="Reference超时问题与优化">
+  <meta property="og:description" content="一.点击reference超时问题 1.问题描述 ​	点击reference时会报超时错误，且reference无法正常展示
+2.原因分析 ​	造成这个问题的原因是：
+​	1.页面请求和Crossref派发耦合：
+​	用户只是打开 References 页面，后端就会同步执行待处理引用的派发逻辑，“准备任务、查缓存、更新状态、写入队列”这些步骤仍然发生在当前 HTTP 请求中，所以引用的文献越多，处理的时间越长
+​	2.后台队列扫描读取了不必要的大字段
+​	定时任务查询是：
+SELECT * FROM spm_references ​	Crossref派发只需要部分字段，而查询整张表的方式会增加数据库的查询成本
+3.解决方法 3.1 页面加载不再派发 Crossref 现在打开 References 页面只做：
+查询当前解析版本； 查询参考文献； 查询作者和作者匹配关系； 计算统计指标； 组装并返回页面数据。 这样页面响应时间不会再直接受待检索引用数量影响。
+3.2 Crossref 改由定时任务后台派发 由定时任务扫描待处理引用：
+@Scheduled(fixedDelay = 10000) public void dispatchPending() 修改后每 10 秒扫描一次，每批最多处理 60 条，然后将任务放入检索队列。
+因此流程变成：
+用户打开 References | |-- 只查询并展示数据，快速返回 | 后台定时任务 | |-- 扫描 PENDING / PARTIAL / NOT_REQUESTED |-- 派发 Crossref/OpenAlex |-- 异步回写检索结果 | 前端轮询 | |-- 刷新最新检索状态 页面和检索任务由同步关系改成了异步关系。">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2026-09-14T17:28:18+08:00">
+    <meta property="article:modified_time" content="2026-09-14T17:28:18+08:00">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Reference超时问题与优化">
+  <meta name="twitter:description" content="一.点击reference超时问题 1.问题描述 ​	点击reference时会报超时错误，且reference无法正常展示
+2.原因分析 ​	造成这个问题的原因是：
+​	1.页面请求和Crossref派发耦合：
+​	用户只是打开 References 页面，后端就会同步执行待处理引用的派发逻辑，“准备任务、查缓存、更新状态、写入队列”这些步骤仍然发生在当前 HTTP 请求中，所以引用的文献越多，处理的时间越长
+​	2.后台队列扫描读取了不必要的大字段
+​	定时任务查询是：
+SELECT * FROM spm_references ​	Crossref派发只需要部分字段，而查询整张表的方式会增加数据库的查询成本
+3.解决方法 3.1 页面加载不再派发 Crossref 现在打开 References 页面只做：
+查询当前解析版本； 查询参考文献； 查询作者和作者匹配关系； 计算统计指标； 组装并返回页面数据。 这样页面响应时间不会再直接受待检索引用数量影响。
+3.2 Crossref 改由定时任务后台派发 由定时任务扫描待处理引用：
+@Scheduled(fixedDelay = 10000) public void dispatchPending() 修改后每 10 秒扫描一次，每批最多处理 60 条，然后将任务放入检索队列。
+因此流程变成：
+用户打开 References | |-- 只查询并展示数据，快速返回 | 后台定时任务 | |-- 扫描 PENDING / PARTIAL / NOT_REQUESTED |-- 派发 Crossref/OpenAlex |-- 异步回写检索结果 | 前端轮询 | |-- 刷新最新检索状态 页面和检索任务由同步关系改成了异步关系。">
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "文章",
+      "item": "https://kelp-z.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Reference超时问题与优化",
+      "item": "https://kelp-z.github.io/posts/reference%E8%B6%85%E6%97%B6%E9%97%AE%E9%A2%98%E4%B8%8E%E4%BC%98%E5%8C%96/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Reference超时问题与优化",
+  "name": "Reference超时问题与优化",
+  "description": "一.点击reference超时问题 1.问题描述 ​\t点击reference时会报超时错误，且reference无法正常展示\n2.原因分析 ​\t造成这个问题的原因是：\n​\t1.页面请求和Crossref派发耦合：\n​\t用户只是打开 References 页面，后端就会同步执行待处理引用的派发逻辑，“准备任务、查缓存、更新状态、写入队列”这些步骤仍然发生在当前 HTTP 请求中，所以引用的文献越多，处理的时间越长\n​\t2.后台队列扫描读取了不必要的大字段\n​\t定时任务查询是：\nSELECT * FROM spm_references ​\tCrossref派发只需要部分字段，而查询整张表的方式会增加数据库的查询成本\n3.解决方法 3.1 页面加载不再派发 Crossref 现在打开 References 页面只做：\n查询当前解析版本； 查询参考文献； 查询作者和作者匹配关系； 计算统计指标； 组装并返回页面数据。 这样页面响应时间不会再直接受待检索引用数量影响。\n3.2 Crossref 改由定时任务后台派发 由定时任务扫描待处理引用：\n@Scheduled(fixedDelay = 10000) public void dispatchPending() 修改后每 10 秒扫描一次，每批最多处理 60 条，然后将任务放入检索队列。\n因此流程变成：\n用户打开 References | |-- 只查询并展示数据，快速返回 | 后台定时任务 | |-- 扫描 PENDING / PARTIAL / NOT_REQUESTED |-- 派发 Crossref/OpenAlex |-- 异步回写检索结果 | 前端轮询 | |-- 刷新最新检索状态 页面和检索任务由同步关系改成了异步关系。\n",
+  "keywords": [
+    
+  ],
+  "articleBody": "一.点击reference超时问题 1.问题描述 ​\t点击reference时会报超时错误，且reference无法正常展示\n2.原因分析 ​\t造成这个问题的原因是：\n​\t1.页面请求和Crossref派发耦合：\n​\t用户只是打开 References 页面，后端就会同步执行待处理引用的派发逻辑，“准备任务、查缓存、更新状态、写入队列”这些步骤仍然发生在当前 HTTP 请求中，所以引用的文献越多，处理的时间越长\n​\t2.后台队列扫描读取了不必要的大字段\n​\t定时任务查询是：\nSELECT * FROM spm_references ​\tCrossref派发只需要部分字段，而查询整张表的方式会增加数据库的查询成本\n3.解决方法 3.1 页面加载不再派发 Crossref 现在打开 References 页面只做：\n查询当前解析版本； 查询参考文献； 查询作者和作者匹配关系； 计算统计指标； 组装并返回页面数据。 这样页面响应时间不会再直接受待检索引用数量影响。\n3.2 Crossref 改由定时任务后台派发 由定时任务扫描待处理引用：\n@Scheduled(fixedDelay = 10000) public void dispatchPending() 修改后每 10 秒扫描一次，每批最多处理 60 条，然后将任务放入检索队列。\n因此流程变成：\n用户打开 References | |-- 只查询并展示数据，快速返回 | 后台定时任务 | |-- 扫描 PENDING / PARTIAL / NOT_REQUESTED |-- 派发 Crossref/OpenAlex |-- 异步回写检索结果 | 前端轮询 | |-- 刷新最新检索状态 页面和检索任务由同步关系改成了异步关系。\n3.3 后台扫描改成只查询必要字段 提交将 Crossref 队列查询从：\nSELECT * 改为：\nSELECT 这个字段列表不包含 retrieved_payload_json，所以后台批量扫描时不会加载大 JSON。\n3.4删除重复的完整查询方法 删除了：\nselectAllByExtractionId() 以及对应的：\nSELECT * FROM spm_references WHERE extraction_id = #{extractionId} 普通查询统一使用轻量字段列表，避免不必要地把完整检索结果加载出来。\n二.参考文献状态轮询优化 前面的修改解决了第一次打开 References 页面时的超时问题，但页面打开后仍然需要定时查询 Crossref、OpenAlex 和 Google Scholar 的检索进度。\n1.问题是什么 检索任务是异步执行的。为了及时显示最新结果，前端会每隔 5 秒刷新一次状态。\n优化前，轮询调用的是完整工作区接口：\nGET /submission/submission/{id}/reference 这意味着每隔 5 秒都会重新加载整个 References 工作区，包括：\n查询全部参考文献； 查询参考文献作者和作者匹配关系； 处理重复文献； 计算自引、他引、年份和文献类型等指标； 构造每条文献的审核状态； 查询检索任务和队列状态； 向前端返回完整的 References 数据。 即使检索状态没有发生任何变化，系统仍然会重复执行上述工作。\n2.原因是什么 系统把两种不同的请求使用场景混在了同一个接口中：\n第一次进入页面时，需要加载完整的 References 工作区。 后续轮询时，通常只需要知道检索进度和数据是否发生变化。 轮询实际上只关心以下信息：\nCrossref 和 OpenAlex 的检索进度； 检索队列的运行状态； Google Scholar 任务状态； 当前解析版本是否变化； Reference 数据是否有新修订。 但是旧逻辑每次都返回完整数据，造成数据库重复查询、后端重复计算、网络传输量增加以及 Vue 表格反复渲染。多人同时打开 References 页面时，这种每 5 秒一次的全量请求会持续增加测试服压力。\n3.解决方法 3.1 新增轻量状态接口 后端新增接口：\nGET /submission/submission/{id}/reference/status 该接口仍然会执行用户权限和稿件归属校验，但不会构造完整的 References 工作区。\n接口只返回轮询所需的信息：\nextractionId referenceRevision workspaceVersion downstreamStatus retrievalProgress retrievalQueueHealth googleVerifyTasks workspaceChanged 它不会返回完整参考文献列表、作者匹配详情、自引和他引分组以及全部统计指标，因此响应体和后端计算量都更小。\n3.2 使用工作区版本号判断是否需要全量刷新 后端使用 extractionId 和 referenceRevision 组成工作区版本号：\nworkspaceVersion = extractionId:referenceRevision 例如：\n44:8 表示当前解析版本 ID 为 44，Reference 数据修订版本为 8。\n前端轮询时会把自己当前的 workspaceVersion 和 downstreamStatus 传给后端。后端将它们与当前数据库状态比较：\n工作区版本不同 或 downstreamStatus 不同 只要其中一项发生变化，后端就返回：\n{ \"workspaceChanged\": true } 3.3 只有数据变化时才重新加载完整工作区 前端改为每隔 5 秒调用轻量状态接口：\n每 5 秒请求 /reference/status | |-- workspaceChanged = false | 只更新检索进度、队列状态和 Google 任务状态 | |-- workspaceChanged = true 再请求一次完整的 /reference 工作区 三.优化后的完整流程 第一次打开 References | |-- 请求完整 /reference 接口 |-- 加载参考文献、作者、统计指标等页面数据 | 后台检索进行中 | |-- 前端每 5 秒请求轻量 /reference/status 接口 | |-- 状态未变化：只更新进度信息 | |-- 状态发生变化：重新加载一次完整工作区 第一次优化解决的是“打开页面时同步派发 Crossref 导致超时”；第二次优化解决的是“页面打开后频繁全量轮询造成持续性能压力”。两次优化组合后，页面加载、后台检索和状态刷新三条链路彼此分离。\n",
+  "wordCount" : "268",
+  "inLanguage": "zh",
+  "datePublished": "2026-09-14T17:28:18+08:00",
+  "dateModified": "2026-09-14T17:28:18+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "Kelp"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://kelp-z.github.io/posts/reference%E8%B6%85%E6%97%B6%E9%97%AE%E9%A2%98%E4%B8%8E%E4%BC%98%E5%8C%96/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Kelp's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://kelp-z.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+<body id="top">
+    <header class="header">
+    <nav class="header-nav">
+        <div class="logo">
+            <a href="https://kelp-z.github.io/" accesskey="h" title="Kelp&#39;s Blog (Alt + H)">
+                        
+                    <img src="https://kelp-z.github.io/images/jerry-avatar_hu_c47b23cfb79a27ab.png" alt="" aria-label="logo"
+                        height="42">Kelp&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg class="sun" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu" class="menu">
+            <li>
+                <a href="https://kelp-z.github.io/posts/" title="文章">
+                    <span>文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/archive/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/about/" title="关于">
+                    <span>关于</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <nav class="breadcrumbs" role="navigation" aria-label="Breadcrumb">
+            <a href="/">主页</a>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right">
+                <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+            <a href="/posts/">文章</a>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right">
+        <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+</nav>
+    <h1 class="post-title entry-hint-parent">
+      Reference超时问题与优化
+    </h1>
+    <div class="post-meta">
+
+<span title='2026-09-14 17:28:18 +0800 +0800'>2026年9月14日</span>&nbsp;·&nbsp;<span>2 分钟</span>&nbsp;·&nbsp;<span>Kelp</span>
+
+</div>
+  </header> <details class="toc"  open>
+    <summary accesskey="c" title="(Alt + C)">
+        <span class="title">目录</span>
+    </summary>
+
+    <div class="inner"><ul>
+            <li>
+                <a href="#%e4%b8%80%e7%82%b9%e5%87%bbreference%e8%b6%85%e6%97%b6%e9%97%ae%e9%a2%98" aria-label="一.点击reference超时问题">一.点击reference超时问题</a><ul>
+                    
+            <li>
+                <a href="#1%e9%97%ae%e9%a2%98%e6%8f%8f%e8%bf%b0" aria-label="1.问题描述">1.问题描述</a></li>
+            <li>
+                <a href="#2%e5%8e%9f%e5%9b%a0%e5%88%86%e6%9e%90" aria-label="2.原因分析">2.原因分析</a></li>
+            <li>
+                <a href="#3%e8%a7%a3%e5%86%b3%e6%96%b9%e6%b3%95" aria-label="3.解决方法">3.解决方法</a><ul>
+                    
+            <li>
+                <a href="#31-%e9%a1%b5%e9%9d%a2%e5%8a%a0%e8%bd%bd%e4%b8%8d%e5%86%8d%e6%b4%be%e5%8f%91-crossref" aria-label="3.1 页面加载不再派发 Crossref">3.1 页面加载不再派发 Crossref</a></li>
+            <li>
+                <a href="#32-crossref-%e6%94%b9%e7%94%b1%e5%ae%9a%e6%97%b6%e4%bb%bb%e5%8a%a1%e5%90%8e%e5%8f%b0%e6%b4%be%e5%8f%91" aria-label="3.2 Crossref 改由定时任务后台派发">3.2 Crossref 改由定时任务后台派发</a></li>
+            <li>
+                <a href="#33-%e5%90%8e%e5%8f%b0%e6%89%ab%e6%8f%8f%e6%94%b9%e6%88%90%e5%8f%aa%e6%9f%a5%e8%af%a2%e5%bf%85%e8%a6%81%e5%ad%97%e6%ae%b5" aria-label="3.3 后台扫描改成只查询必要字段">3.3 后台扫描改成只查询必要字段</a></li>
+            <li>
+                <a href="#34%e5%88%a0%e9%99%a4%e9%87%8d%e5%a4%8d%e7%9a%84%e5%ae%8c%e6%95%b4%e6%9f%a5%e8%af%a2%e6%96%b9%e6%b3%95" aria-label="3.4删除重复的完整查询方法">3.4删除重复的完整查询方法</a></li></ul>
+            </li></ul>
+            </li>
+            <li>
+                <a href="#%e4%ba%8c%e5%8f%82%e8%80%83%e6%96%87%e7%8c%ae%e7%8a%b6%e6%80%81%e8%bd%ae%e8%af%a2%e4%bc%98%e5%8c%96" aria-label="二.参考文献状态轮询优化">二.参考文献状态轮询优化</a><ul>
+                    
+            <li>
+                <a href="#1%e9%97%ae%e9%a2%98%e6%98%af%e4%bb%80%e4%b9%88" aria-label="1.问题是什么">1.问题是什么</a></li>
+            <li>
+                <a href="#2%e5%8e%9f%e5%9b%a0%e6%98%af%e4%bb%80%e4%b9%88" aria-label="2.原因是什么">2.原因是什么</a></li>
+            <li>
+                <a href="#3%e8%a7%a3%e5%86%b3%e6%96%b9%e6%b3%95-1" aria-label="3.解决方法">3.解决方法</a><ul>
+                    
+            <li>
+                <a href="#31-%e6%96%b0%e5%a2%9e%e8%bd%bb%e9%87%8f%e7%8a%b6%e6%80%81%e6%8e%a5%e5%8f%a3" aria-label="3.1 新增轻量状态接口">3.1 新增轻量状态接口</a></li>
+            <li>
+                <a href="#32-%e4%bd%bf%e7%94%a8%e5%b7%a5%e4%bd%9c%e5%8c%ba%e7%89%88%e6%9c%ac%e5%8f%b7%e5%88%a4%e6%96%ad%e6%98%af%e5%90%a6%e9%9c%80%e8%a6%81%e5%85%a8%e9%87%8f%e5%88%b7%e6%96%b0" aria-label="3.2 使用工作区版本号判断是否需要全量刷新">3.2 使用工作区版本号判断是否需要全量刷新</a></li>
+            <li>
+                <a href="#33-%e5%8f%aa%e6%9c%89%e6%95%b0%e6%8d%ae%e5%8f%98%e5%8c%96%e6%97%b6%e6%89%8d%e9%87%8d%e6%96%b0%e5%8a%a0%e8%bd%bd%e5%ae%8c%e6%95%b4%e5%b7%a5%e4%bd%9c%e5%8c%ba" aria-label="3.3 只有数据变化时才重新加载完整工作区">3.3 只有数据变化时才重新加载完整工作区</a></li></ul>
+            </li>
+            <li>
+                <a href="#%e4%b8%89%e4%bc%98%e5%8c%96%e5%90%8e%e7%9a%84%e5%ae%8c%e6%95%b4%e6%b5%81%e7%a8%8b" aria-label="三.优化后的完整流程">三.优化后的完整流程</a>
+            </li>
+        </ul>
+        </li>
+        </ul>
+    </div>
+</details>
+
+  <div class="post-content md-content"><h2 id="一点击reference超时问题">一.点击reference超时问题<a hidden class="anchor" aria-hidden="true" href="#一点击reference超时问题">#</a></h2>
+<h3 id="1问题描述">1.问题描述<a hidden class="anchor" aria-hidden="true" href="#1问题描述">#</a></h3>
+<p>​	点击reference时会报超时错误，且reference无法正常展示</p>
+<h3 id="2原因分析">2.原因分析<a hidden class="anchor" aria-hidden="true" href="#2原因分析">#</a></h3>
+<p>​	造成这个问题的原因是：</p>
+<p>​		<strong>1.页面请求和Crossref派发耦合：</strong></p>
+<p>​			用户只是打开 References 页面，后端就会同步执行待处理引用的派发逻辑，“准备任务、查缓存、更新状态、写入队列”这些步骤仍然发生在当前 HTTP 请求中，所以引用的文献越多，处理的时间越长</p>
+<p>​		<strong>2.后台队列扫描读取了不必要的大字段</strong></p>
+<p>​			定时任务查询是：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">FROM</span><span class="w"> </span><span class="n">spm_references</span><span class="w">
+</span></span></span></code></pre></div><p>​			Crossref派发只需要部分字段，而查询整张表的方式会增加数据库的查询成本</p>
+<h3 id="3解决方法">3.解决方法<a hidden class="anchor" aria-hidden="true" href="#3解决方法">#</a></h3>
+<h4 id="31-页面加载不再派发-crossref">3.1 页面加载不再派发 Crossref<a hidden class="anchor" aria-hidden="true" href="#31-页面加载不再派发-crossref">#</a></h4>
+<p>现在打开 References 页面只做：</p>
+<ul>
+<li>查询当前解析版本；</li>
+<li>查询参考文献；</li>
+<li>查询作者和作者匹配关系；</li>
+<li>计算统计指标；</li>
+<li>组装并返回页面数据。</li>
+</ul>
+<p>这样页面响应时间不会再直接受待检索引用数量影响。</p>
+<h4 id="32-crossref-改由定时任务后台派发">3.2 Crossref 改由定时任务后台派发<a hidden class="anchor" aria-hidden="true" href="#32-crossref-改由定时任务后台派发">#</a></h4>
+<p>由定时任务扫描待处理引用：</p>
+<pre tabindex="0"><code>@Scheduled(fixedDelay = 10000)
+public void dispatchPending()
+</code></pre><p>修改后每 10 秒扫描一次，每批最多处理 60 条，然后将任务放入检索队列。</p>
+<p>因此流程变成：</p>
+<pre tabindex="0"><code>用户打开 References
+        |
+        |-- 只查询并展示数据，快速返回
+        |
+后台定时任务
+        |
+        |-- 扫描 PENDING / PARTIAL / NOT_REQUESTED
+        |-- 派发 Crossref/OpenAlex
+        |-- 异步回写检索结果
+        |
+前端轮询
+        |
+        |-- 刷新最新检索状态
+</code></pre><p>页面和检索任务由同步关系改成了异步关系。</p>
+<h4 id="33-后台扫描改成只查询必要字段">3.3 后台扫描改成只查询必要字段<a hidden class="anchor" aria-hidden="true" href="#33-后台扫描改成只查询必要字段">#</a></h4>
+<p>提交将 Crossref 队列查询从：</p>
+<pre tabindex="0"><code>SELECT *
+</code></pre><p>改为：</p>
+<pre tabindex="0"><code>SELECT &lt;include refid=&#34;workspaceReferenceColumns&#34;/&gt;
+</code></pre><p>这个字段列表不包含 <code>retrieved_payload_json</code>，所以后台批量扫描时不会加载大 JSON。</p>
+<h4 id="34删除重复的完整查询方法">3.4删除重复的完整查询方法<a hidden class="anchor" aria-hidden="true" href="#34删除重复的完整查询方法">#</a></h4>
+<p>删除了：</p>
+<pre tabindex="0"><code>selectAllByExtractionId()
+</code></pre><p>以及对应的：</p>
+<pre tabindex="0"><code>SELECT *
+FROM spm_references
+WHERE extraction_id = #{extractionId}
+</code></pre><p>普通查询统一使用轻量字段列表，避免不必要地把完整检索结果加载出来。</p>
+<h2 id="二参考文献状态轮询优化">二.参考文献状态轮询优化<a hidden class="anchor" aria-hidden="true" href="#二参考文献状态轮询优化">#</a></h2>
+<p>前面的修改解决了第一次打开 References 页面时的超时问题，但页面打开后仍然需要定时查询 Crossref、OpenAlex 和 Google Scholar 的检索进度。</p>
+<h3 id="1问题是什么">1.问题是什么<a hidden class="anchor" aria-hidden="true" href="#1问题是什么">#</a></h3>
+<p>检索任务是异步执行的。为了及时显示最新结果，前端会每隔 5 秒刷新一次状态。</p>
+<p>优化前，轮询调用的是完整工作区接口：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">GET /submission/submission/{id}/reference
+</span></span></code></pre></div><p>这意味着每隔 5 秒都会重新加载整个 References 工作区，包括：</p>
+<ul>
+<li>查询全部参考文献；</li>
+<li>查询参考文献作者和作者匹配关系；</li>
+<li>处理重复文献；</li>
+<li>计算自引、他引、年份和文献类型等指标；</li>
+<li>构造每条文献的审核状态；</li>
+<li>查询检索任务和队列状态；</li>
+<li>向前端返回完整的 References 数据。</li>
+</ul>
+<p>即使检索状态没有发生任何变化，系统仍然会重复执行上述工作。</p>
+<h3 id="2原因是什么">2.原因是什么<a hidden class="anchor" aria-hidden="true" href="#2原因是什么">#</a></h3>
+<p>系统把两种不同的请求使用场景混在了同一个接口中：</p>
+<ol>
+<li>第一次进入页面时，需要加载完整的 References 工作区。</li>
+<li>后续轮询时，通常只需要知道检索进度和数据是否发生变化。</li>
+</ol>
+<p>轮询实际上只关心以下信息：</p>
+<ul>
+<li>Crossref 和 OpenAlex 的检索进度；</li>
+<li>检索队列的运行状态；</li>
+<li>Google Scholar 任务状态；</li>
+<li>当前解析版本是否变化；</li>
+<li>Reference 数据是否有新修订。</li>
+</ul>
+<p>但是旧逻辑每次都返回完整数据，造成数据库重复查询、后端重复计算、网络传输量增加以及 Vue 表格反复渲染。多人同时打开 References 页面时，这种每 5 秒一次的全量请求会持续增加测试服压力。</p>
+<h3 id="3解决方法-1">3.解决方法<a hidden class="anchor" aria-hidden="true" href="#3解决方法-1">#</a></h3>
+<h4 id="31-新增轻量状态接口">3.1 新增轻量状态接口<a hidden class="anchor" aria-hidden="true" href="#31-新增轻量状态接口">#</a></h4>
+<p>后端新增接口：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">GET /submission/submission/{id}/reference/status
+</span></span></code></pre></div><p>该接口仍然会执行用户权限和稿件归属校验，但不会构造完整的 References 工作区。</p>
+<p>接口只返回轮询所需的信息：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">extractionId
+</span></span><span class="line"><span class="cl">referenceRevision
+</span></span><span class="line"><span class="cl">workspaceVersion
+</span></span><span class="line"><span class="cl">downstreamStatus
+</span></span><span class="line"><span class="cl">retrievalProgress
+</span></span><span class="line"><span class="cl">retrievalQueueHealth
+</span></span><span class="line"><span class="cl">googleVerifyTasks
+</span></span><span class="line"><span class="cl">workspaceChanged
+</span></span></code></pre></div><p>它不会返回完整参考文献列表、作者匹配详情、自引和他引分组以及全部统计指标，因此响应体和后端计算量都更小。</p>
+<h4 id="32-使用工作区版本号判断是否需要全量刷新">3.2 使用工作区版本号判断是否需要全量刷新<a hidden class="anchor" aria-hidden="true" href="#32-使用工作区版本号判断是否需要全量刷新">#</a></h4>
+<p>后端使用 <code>extractionId</code> 和 <code>referenceRevision</code> 组成工作区版本号：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">workspaceVersion = extractionId:referenceRevision
+</span></span></code></pre></div><p>例如：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">44:8
+</span></span></code></pre></div><p>表示当前解析版本 ID 为 <code>44</code>，Reference 数据修订版本为 <code>8</code>。</p>
+<p>前端轮询时会把自己当前的 <code>workspaceVersion</code> 和 <code>downstreamStatus</code> 传给后端。后端将它们与当前数据库状态比较：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">工作区版本不同
+</span></span><span class="line"><span class="cl">    或
+</span></span><span class="line"><span class="cl">downstreamStatus 不同
+</span></span></code></pre></div><p>只要其中一项发生变化，后端就返回：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;workspaceChanged&#34;</span><span class="p">:</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h4 id="33-只有数据变化时才重新加载完整工作区">3.3 只有数据变化时才重新加载完整工作区<a hidden class="anchor" aria-hidden="true" href="#33-只有数据变化时才重新加载完整工作区">#</a></h4>
+<p>前端改为每隔 5 秒调用轻量状态接口：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">每 5 秒请求 /reference/status
+</span></span><span class="line"><span class="cl">        |
+</span></span><span class="line"><span class="cl">        |-- workspaceChanged = false
+</span></span><span class="line"><span class="cl">        |      只更新检索进度、队列状态和 Google 任务状态
+</span></span><span class="line"><span class="cl">        |
+</span></span><span class="line"><span class="cl">        |-- workspaceChanged = true
+</span></span><span class="line"><span class="cl">               再请求一次完整的 /reference 工作区
+</span></span></code></pre></div><h3 id="三优化后的完整流程">三.优化后的完整流程<a hidden class="anchor" aria-hidden="true" href="#三优化后的完整流程">#</a></h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">第一次打开 References
+</span></span><span class="line"><span class="cl">        |
+</span></span><span class="line"><span class="cl">        |-- 请求完整 /reference 接口
+</span></span><span class="line"><span class="cl">        |-- 加载参考文献、作者、统计指标等页面数据
+</span></span><span class="line"><span class="cl">        |
+</span></span><span class="line"><span class="cl">后台检索进行中
+</span></span><span class="line"><span class="cl">        |
+</span></span><span class="line"><span class="cl">        |-- 前端每 5 秒请求轻量 /reference/status 接口
+</span></span><span class="line"><span class="cl">        |
+</span></span><span class="line"><span class="cl">        |-- 状态未变化：只更新进度信息
+</span></span><span class="line"><span class="cl">        |
+</span></span><span class="line"><span class="cl">        |-- 状态发生变化：重新加载一次完整工作区
+</span></span></code></pre></div><p>第一次优化解决的是“打开页面时同步派发 Crossref 导致超时”；第二次优化解决的是“页面打开后频繁全量轮询造成持续性能压力”。两次优化组合后，页面加载、后台检索和状态刷新三条链路彼此分离。</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+<nav class="paginav">
+  <a class="next" href="https://kelp-z.github.io/posts/paperlens%E6%9C%AC%E5%9C%B0%E9%83%A8%E7%BD%B2%E5%AE%8C%E6%95%B4%E6%8C%87%E5%8D%97/">
+    <span class="title">下一页 »</span>
+    <span>spm系统的PaperLens本地部署完整指南</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="https://kelp-z.github.io/">Kelp&#39;s Blog</a></span> · 
+
+    
+    
+    <span>
+        Powered by
+        <a href="https://gohugo.io/?utm_source=papermod" rel="noopener" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" id="top-link" class="top-link hidden" aria-label="go to top" title="Go to Top (Alt + G)" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-up">
+        <polyline points="17 11 12 6 7 11"></polyline>
+        <polyline points="17 18 12 13 7 18"></polyline>
+    </svg>
+</a><script>
+    document.addEventListener("click", function (event) {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+        const target = event.target.closest("a, button");
+        if (!target) return;
+
+        const ripple = document.createElement("span");
+        ripple.className = "click-ripple";
+        ripple.style.left = `${event.clientX}px`;
+        ripple.style.top = `${event.clientY}px`;
+        document.body.appendChild(ripple);
+        ripple.addEventListener("animationend", () => ripple.remove(), { once: true });
+    });
+
+    const tocLinks = Array.from(document.querySelectorAll(".post-single > .toc a[href^='#']"));
+    const tocHeadings = tocLinks.map((link) => {
+        try {
+            return { link, heading: document.getElementById(decodeURIComponent(link.hash.slice(1))) };
+        } catch {
+            return { link, heading: null };
+        }
+    }).filter((item) => item.heading);
+
+    if (tocHeadings.length) {
+        let ticking = false;
+        const updateActiveTocLink = () => {
+            let active = tocHeadings[0];
+            for (const item of tocHeadings) {
+                if (item.heading.getBoundingClientRect().top <= 180) active = item;
+            }
+            tocLinks.forEach((link) => link.classList.toggle("is-active", link === active.link));
+            ticking = false;
+        };
+
+        document.addEventListener("scroll", () => {
+            if (!ticking) {
+                requestAnimationFrame(updateActiveTocLink);
+                ticking = true;
+            }
+        }, { passive: true });
+        updateActiveTocLink();
+    }
+</script>
+
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var toplink = document.getElementById("top-link");
+    window.onscroll = function () {
+        const scrollThreshold = window.innerHeight;
+        if (document.body.scrollTop > scrollThreshold || document.documentElement.scrollTop > scrollThreshold) {
+            toplink.classList.remove("hidden");
+        } else {
+            toplink.classList.add("hidden");
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

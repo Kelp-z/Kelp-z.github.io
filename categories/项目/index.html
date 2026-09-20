@@ -152,6 +152,33 @@
 
 <article class="post-entry tag-entry"> 
   <header class="entry-header">
+    <h2 class="entry-hint-parent">Reference超时问题与优化
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一.点击reference超时问题 1.问题描述 ​	点击reference时会报超时错误，且reference无法正常展示
+2.原因分析 ​	造成这个问题的原因是：
+​	1.页面请求和Crossref派发耦合：
+​	用户只是打开 References 页面，后端就会同步执行待处理引用的派发逻辑，“准备任务、查缓存、更新状态、写入队列”这些步骤仍然发生在当前 HTTP 请求中，所以引用的文献越多，处理的时间越长
+​	2.后台队列扫描读取了不必要的大字段
+​	定时任务查询是：
+SELECT * FROM spm_references ​	Crossref派发只需要部分字段，而查询整张表的方式会增加数据库的查询成本
+3.解决方法 3.1 页面加载不再派发 Crossref 现在打开 References 页面只做：
+查询当前解析版本； 查询参考文献； 查询作者和作者匹配关系； 计算统计指标； 组装并返回页面数据。 这样页面响应时间不会再直接受待检索引用数量影响。
+3.2 Crossref 改由定时任务后台派发 由定时任务扫描待处理引用：
+@Scheduled(fixedDelay = 10000) public void dispatchPending() 修改后每 10 秒扫描一次，每批最多处理 60 条，然后将任务放入检索队列。
+因此流程变成：
+用户打开 References | |-- 只查询并展示数据，快速返回 | 后台定时任务 | |-- 扫描 PENDING / PARTIAL / NOT_REQUESTED |-- 派发 Crossref/OpenAlex |-- 异步回写检索结果 | 前端轮询 | |-- 刷新最新检索状态 页面和检索任务由同步关系改成了异步关系。
+...</p>
+  </div>
+  <footer class="entry-footer">
+
+<span title='2026-09-14 17:28:18 +0800 +0800'>2026年9月14日</span>&nbsp;·&nbsp;<span>2 分钟</span>&nbsp;·&nbsp;<span>Kelp</span></footer>
+  <a class="entry-link" aria-label="post link to Reference超时问题与优化" href="https://kelp-z.github.io/posts/reference%E8%B6%85%E6%97%B6%E9%97%AE%E9%A2%98%E4%B8%8E%E4%BC%98%E5%8C%96/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
     <h2 class="entry-hint-parent">spm系统的PaperLens本地部署完整指南
     </h2>
   </header>
