@@ -183,6 +183,25 @@
 
 <article class="post-entry"> 
   <header class="entry-header">
+    <h2 class="entry-hint-parent">滑动窗口
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>滑动窗口通常用来处理数组或字符串中的连续区间问题。它通过维护左右边界，在遍历过程中动态扩大或缩小窗口，从而避免重复计算。
+无重复字符的最长子串 题目 给定一个字符串 s，找出其中不含重复字符的最长子串，并返回该子串的长度。
+思路 使用 left 和 right 表示当前窗口的左右边界，并用 Map 记录每个字符最近一次出现的位置。
+right 向右移动，将新字符加入窗口。 如果新字符已经在当前窗口中出现，将 left 移动到该字符上次出现位置的下一位。 每次移动后，使用 right - left &#43; 1 更新最长子串长度。 更新左边界时需要使用 Math.max，避免 left 回退到当前窗口之前的位置。
+class Solution { public int lengthOfLongestSubstring(String s) { int n = s.length(); int ans = 0; Map&lt;Character, Integer&gt; map = new HashMap&lt;&gt;(); for (int left = 0, right = 0; right &lt; n; right&#43;&#43;) { char c = s.charAt(right); if (map.containsKey(c)) { // 出现重复字符时，收缩窗口左边界 left = Math.max(left, map.get(c) &#43; 1); } ans = Math.max(ans, right - left &#43; 1); map.put(c, right); } return ans; } } 时间复杂度为 O(n)，空间复杂度为 O(k)，其中 k 是字符串中不同字符的数量。
+...</p>
+  </div>
+  <footer class="entry-footer">
+
+<span title='2026-09-25 00:00:00 +0000 UTC'>2026年9月25日</span>&nbsp;·&nbsp;<span>2 分钟</span>&nbsp;·&nbsp;<span>Kelp</span></footer>
+  <a class="entry-link" aria-label="post link to 滑动窗口" href="https://kelp-z.github.io/posts/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
     <h2 class="entry-hint-parent">Reference超时问题与优化
     </h2>
   </header>

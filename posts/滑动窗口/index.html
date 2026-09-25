@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto" data-theme="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>滑动窗口 | Kelp&#39;s Blog</title>
+<meta name="keywords" content="滑动窗口">
+<meta name="description" content="滑动窗口通常用来处理数组或字符串中的连续区间问题。它通过维护左右边界，在遍历过程中动态扩大或缩小窗口，从而避免重复计算。
+无重复字符的最长子串
+题目
+给定一个字符串 s，找出其中不含重复字符的最长子串，并返回该子串的长度。
+思路
+使用 left 和 right 表示当前窗口的左右边界，并用 Map 记录每个字符最近一次出现的位置。
+
+right 向右移动，将新字符加入窗口。
+如果新字符已经在当前窗口中出现，将 left 移动到该字符上次出现位置的下一位。
+每次移动后，使用 right - left &#43; 1 更新最长子串长度。
+
+更新左边界时需要使用 Math.max，避免 left 回退到当前窗口之前的位置。
+class Solution {
+    public int lengthOfLongestSubstring(String s) {
+        int n = s.length();
+        int ans = 0;
+        Map&lt;Character, Integer&gt; map = new HashMap&lt;&gt;();
+
+        for (int left = 0, right = 0; right &lt; n; right&#43;&#43;) {
+            char c = s.charAt(right);
+
+            if (map.containsKey(c)) {
+                // 出现重复字符时，收缩窗口左边界
+                left = Math.max(left, map.get(c) &#43; 1);
+            }
+
+            ans = Math.max(ans, right - left &#43; 1);
+            map.put(c, right);
+        }
+
+        return ans;
+    }
+}
+时间复杂度为 O(n)，空间复杂度为 O(k)，其中 k 是字符串中不同字符的数量。">
+<meta name="author" content="Kelp">
+<link rel="canonical" href="https://kelp-z.github.io/posts/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.59be42353eb383be08f2ef1e22c24b66949e288239f6531d5833adbbbb6c8688.css" integrity="sha256-Wb5CNT6zg74I8u8eIsJLZpSeKII59lMdWDOtu7tshog=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://kelp-z.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://kelp-z.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://kelp-z.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://kelp-z.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://kelp-z.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://kelp-z.github.io/posts/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script><link rel="stylesheet" href="/css/extended/custom.min.81c108bc0f646cc13dc17f8dcbc1e5237d6de6c73ce2a9f96fac8dcdcf313d44.css" integrity="sha256-gcEIvA9kbME9wX&#43;Ny8HlI31t5sc84qn5b6yNzc8xPUQ=">
+<meta property="og:url" content="https://kelp-z.github.io/posts/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/">
+  <meta property="og:site_name" content="Kelp&#39;s Blog">
+  <meta property="og:title" content="滑动窗口">
+  <meta property="og:description" content="滑动窗口通常用来处理数组或字符串中的连续区间问题。它通过维护左右边界，在遍历过程中动态扩大或缩小窗口，从而避免重复计算。
+无重复字符的最长子串 题目 给定一个字符串 s，找出其中不含重复字符的最长子串，并返回该子串的长度。
+思路 使用 left 和 right 表示当前窗口的左右边界，并用 Map 记录每个字符最近一次出现的位置。
+right 向右移动，将新字符加入窗口。 如果新字符已经在当前窗口中出现，将 left 移动到该字符上次出现位置的下一位。 每次移动后，使用 right - left &#43; 1 更新最长子串长度。 更新左边界时需要使用 Math.max，避免 left 回退到当前窗口之前的位置。
+class Solution { public int lengthOfLongestSubstring(String s) { int n = s.length(); int ans = 0; Map&lt;Character, Integer&gt; map = new HashMap&lt;&gt;(); for (int left = 0, right = 0; right &lt; n; right&#43;&#43;) { char c = s.charAt(right); if (map.containsKey(c)) { // 出现重复字符时，收缩窗口左边界 left = Math.max(left, map.get(c) &#43; 1); } ans = Math.max(ans, right - left &#43; 1); map.put(c, right); } return ans; } } 时间复杂度为 O(n)，空间复杂度为 O(k)，其中 k 是字符串中不同字符的数量。">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2026-09-25T00:00:00+00:00">
+    <meta property="article:modified_time" content="2026-09-25T00:00:00+00:00">
+    <meta property="article:tag" content="滑动窗口">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="滑动窗口">
+  <meta name="twitter:description" content="滑动窗口通常用来处理数组或字符串中的连续区间问题。它通过维护左右边界，在遍历过程中动态扩大或缩小窗口，从而避免重复计算。
+无重复字符的最长子串 题目 给定一个字符串 s，找出其中不含重复字符的最长子串，并返回该子串的长度。
+思路 使用 left 和 right 表示当前窗口的左右边界，并用 Map 记录每个字符最近一次出现的位置。
+right 向右移动，将新字符加入窗口。 如果新字符已经在当前窗口中出现，将 left 移动到该字符上次出现位置的下一位。 每次移动后，使用 right - left &#43; 1 更新最长子串长度。 更新左边界时需要使用 Math.max，避免 left 回退到当前窗口之前的位置。
+class Solution { public int lengthOfLongestSubstring(String s) { int n = s.length(); int ans = 0; Map&lt;Character, Integer&gt; map = new HashMap&lt;&gt;(); for (int left = 0, right = 0; right &lt; n; right&#43;&#43;) { char c = s.charAt(right); if (map.containsKey(c)) { // 出现重复字符时，收缩窗口左边界 left = Math.max(left, map.get(c) &#43; 1); } ans = Math.max(ans, right - left &#43; 1); map.put(c, right); } return ans; } } 时间复杂度为 O(n)，空间复杂度为 O(k)，其中 k 是字符串中不同字符的数量。">
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "文章",
+      "item": "https://kelp-z.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "滑动窗口",
+      "item": "https://kelp-z.github.io/posts/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "滑动窗口",
+  "name": "滑动窗口",
+  "description": "滑动窗口通常用来处理数组或字符串中的连续区间问题。它通过维护左右边界，在遍历过程中动态扩大或缩小窗口，从而避免重复计算。\n无重复字符的最长子串 题目 给定一个字符串 s，找出其中不含重复字符的最长子串，并返回该子串的长度。\n思路 使用 left 和 right 表示当前窗口的左右边界，并用 Map 记录每个字符最近一次出现的位置。\nright 向右移动，将新字符加入窗口。 如果新字符已经在当前窗口中出现，将 left 移动到该字符上次出现位置的下一位。 每次移动后，使用 right - left + 1 更新最长子串长度。 更新左边界时需要使用 Math.max，避免 left 回退到当前窗口之前的位置。\nclass Solution { public int lengthOfLongestSubstring(String s) { int n = s.length(); int ans = 0; Map\u0026lt;Character, Integer\u0026gt; map = new HashMap\u0026lt;\u0026gt;(); for (int left = 0, right = 0; right \u0026lt; n; right++) { char c = s.charAt(right); if (map.containsKey(c)) { // 出现重复字符时，收缩窗口左边界 left = Math.max(left, map.get(c) + 1); } ans = Math.max(ans, right - left + 1); map.put(c, right); } return ans; } } 时间复杂度为 O(n)，空间复杂度为 O(k)，其中 k 是字符串中不同字符的数量。\n",
+  "keywords": [
+    "滑动窗口"
+  ],
+  "articleBody": "滑动窗口通常用来处理数组或字符串中的连续区间问题。它通过维护左右边界，在遍历过程中动态扩大或缩小窗口，从而避免重复计算。\n无重复字符的最长子串 题目 给定一个字符串 s，找出其中不含重复字符的最长子串，并返回该子串的长度。\n思路 使用 left 和 right 表示当前窗口的左右边界，并用 Map 记录每个字符最近一次出现的位置。\nright 向右移动，将新字符加入窗口。 如果新字符已经在当前窗口中出现，将 left 移动到该字符上次出现位置的下一位。 每次移动后，使用 right - left + 1 更新最长子串长度。 更新左边界时需要使用 Math.max，避免 left 回退到当前窗口之前的位置。\nclass Solution { public int lengthOfLongestSubstring(String s) { int n = s.length(); int ans = 0; Map\u003cCharacter, Integer\u003e map = new HashMap\u003c\u003e(); for (int left = 0, right = 0; right \u003c n; right++) { char c = s.charAt(right); if (map.containsKey(c)) { // 出现重复字符时，收缩窗口左边界 left = Math.max(left, map.get(c) + 1); } ans = Math.max(ans, right - left + 1); map.put(c, right); } return ans; } } 时间复杂度为 O(n)，空间复杂度为 O(k)，其中 k 是字符串中不同字符的数量。\n找到字符串中所有字母异位词 题目 给定两个字符串 s 和 p，找到 s 中所有 p 的异位词子串，并返回这些子串的起始索引。答案顺序不限。\n思路 异位词具有两个特点：\n子串长度与 p 相同。 每个字符出现的次数与 p 相同。 因此可以维护一个长度固定为 p.length() 的窗口：右边界每次加入一个字符；当窗口过长时，移除最左边的字符。窗口达到目标长度后，比较窗口与 p 的字符频次数组。\n下面的实现假设 s 和 p 只包含小写英文字母。\nclass Solution { public List\u003cInteger\u003e findAnagrams(String s, String p) { List\u003cInteger\u003e indexes = new ArrayList\u003c\u003e(); int[] need = new int[26]; int[] window = new int[26]; int windowLength = p.length(); // 统计 p 中每个字符需要出现的次数 for (char c : p.toCharArray()) { need[c - 'a']++; } for (int right = 0; right \u003c s.length(); right++) { // 将右边界字符加入窗口 window[s.charAt(right) - 'a']++; // 窗口过长时，移除最左边的字符 if (right \u003e= windowLength) { window[s.charAt(right - windowLength) - 'a']--; } // 窗口长度达到 p 的长度，并且字符频次相同 if (right \u003e= windowLength - 1 \u0026\u0026 Arrays.equals(need, window)) { int left = right - windowLength + 1; indexes.add(left); } } return indexes; } } 由于字符集大小固定为 26，比较两个频次数组可以视为常数操作，因此时间复杂度为 O(n)，空间复杂度为 O(1)。\n总结 这两道题分别对应两种常见的滑动窗口形式：\n可变长度窗口：窗口不满足条件时移动左边界，例如无重复字符的最长子串。 固定长度窗口：始终维护指定长度的区间，例如查找字母异位词。 ",
+  "wordCount" : "236",
+  "inLanguage": "zh",
+  "datePublished": "2026-09-25T00:00:00Z",
+  "dateModified": "2026-09-25T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "Kelp"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://kelp-z.github.io/posts/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Kelp's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://kelp-z.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+<body id="top">
+    <header class="header">
+    <nav class="header-nav">
+        <div class="logo">
+            <a href="https://kelp-z.github.io/" accesskey="h" title="Kelp&#39;s Blog (Alt + H)">
+                        
+                    <img src="https://kelp-z.github.io/images/jerry-avatar_hu_c47b23cfb79a27ab.png" alt="" aria-label="logo"
+                        height="42">Kelp&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg class="sun" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu" class="menu">
+            <li>
+                <a href="https://kelp-z.github.io/posts/" title="文章">
+                    <span>文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/archive/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/about/" title="关于">
+                    <span>关于</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <nav class="breadcrumbs" role="navigation" aria-label="Breadcrumb">
+            <a href="/">主页</a>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right">
+                <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+            <a href="/posts/">文章</a>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right">
+        <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+</nav>
+    <h1 class="post-title entry-hint-parent">
+      滑动窗口
+    </h1>
+    <div class="post-meta">
+
+<span title='2026-09-25 00:00:00 +0000 UTC'>2026年9月25日</span>&nbsp;·&nbsp;<span>2 分钟</span>&nbsp;·&nbsp;<span>Kelp</span>
+
+</div>
+  </header> <details class="toc"  open>
+    <summary accesskey="c" title="(Alt + C)">
+        <span class="title">目录</span>
+    </summary>
+
+    <div class="inner"><ul>
+            <li>
+                <a href="#%e6%97%a0%e9%87%8d%e5%a4%8d%e5%ad%97%e7%ac%a6%e7%9a%84%e6%9c%80%e9%95%bf%e5%ad%90%e4%b8%b2" aria-label="无重复字符的最长子串">无重复字符的最长子串</a><ul>
+                    
+            <li>
+                <a href="#%e9%a2%98%e7%9b%ae" aria-label="题目">题目</a></li>
+            <li>
+                <a href="#%e6%80%9d%e8%b7%af" aria-label="思路">思路</a></li></ul>
+            </li>
+            <li>
+                <a href="#%e6%89%be%e5%88%b0%e5%ad%97%e7%ac%a6%e4%b8%b2%e4%b8%ad%e6%89%80%e6%9c%89%e5%ad%97%e6%af%8d%e5%bc%82%e4%bd%8d%e8%af%8d" aria-label="找到字符串中所有字母异位词">找到字符串中所有字母异位词</a><ul>
+                    
+            <li>
+                <a href="#%e9%a2%98%e7%9b%ae-1" aria-label="题目">题目</a></li>
+            <li>
+                <a href="#%e6%80%9d%e8%b7%af-1" aria-label="思路">思路</a></li></ul>
+            </li>
+            <li>
+                <a href="#%e6%80%bb%e7%bb%93" aria-label="总结">总结</a>
+            </li>
+        </ul>
+    </div>
+</details>
+
+  <div class="post-content md-content"><p>滑动窗口通常用来处理数组或字符串中的连续区间问题。它通过维护左右边界，在遍历过程中动态扩大或缩小窗口，从而避免重复计算。</p>
+<h2 id="无重复字符的最长子串">无重复字符的最长子串<a hidden class="anchor" aria-hidden="true" href="#无重复字符的最长子串">#</a></h2>
+<h3 id="题目">题目<a hidden class="anchor" aria-hidden="true" href="#题目">#</a></h3>
+<p>给定一个字符串 <code>s</code>，找出其中不含重复字符的最长子串，并返回该子串的长度。</p>
+<h3 id="思路">思路<a hidden class="anchor" aria-hidden="true" href="#思路">#</a></h3>
+<p>使用 <code>left</code> 和 <code>right</code> 表示当前窗口的左右边界，并用 <code>Map</code> 记录每个字符最近一次出现的位置。</p>
+<ol>
+<li><code>right</code> 向右移动，将新字符加入窗口。</li>
+<li>如果新字符已经在当前窗口中出现，将 <code>left</code> 移动到该字符上次出现位置的下一位。</li>
+<li>每次移动后，使用 <code>right - left + 1</code> 更新最长子串长度。</li>
+</ol>
+<p>更新左边界时需要使用 <code>Math.max</code>，避免 <code>left</code> 回退到当前窗口之前的位置。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">class</span> <span class="nc">Solution</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">lengthOfLongestSubstring</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="na">length</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">ans</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">0</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">Map</span><span class="o">&lt;</span><span class="n">Character</span><span class="p">,</span><span class="w"> </span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">map</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">HashMap</span><span class="o">&lt;&gt;</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">0</span><span class="p">,</span><span class="w"> </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">0</span><span class="p">;</span><span class="w"> </span><span class="n">right</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"> </span><span class="n">right</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="kt">char</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="na">charAt</span><span class="p">(</span><span class="n">right</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">map</span><span class="p">.</span><span class="na">containsKey</span><span class="p">(</span><span class="n">c</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="c1">// 出现重复字符时，收缩窗口左边界</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Math</span><span class="p">.</span><span class="na">max</span><span class="p">(</span><span class="n">left</span><span class="p">,</span><span class="w"> </span><span class="n">map</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">1</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">ans</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Math</span><span class="p">.</span><span class="na">max</span><span class="p">(</span><span class="n">ans</span><span class="p">,</span><span class="w"> </span><span class="n">right</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">left</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">1</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">map</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="w"> </span><span class="n">right</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">ans</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><p>时间复杂度为 <code>O(n)</code>，空间复杂度为 <code>O(k)</code>，其中 <code>k</code> 是字符串中不同字符的数量。</p>
+<h2 id="找到字符串中所有字母异位词">找到字符串中所有字母异位词<a hidden class="anchor" aria-hidden="true" href="#找到字符串中所有字母异位词">#</a></h2>
+<h3 id="题目-1">题目<a hidden class="anchor" aria-hidden="true" href="#题目-1">#</a></h3>
+<p>给定两个字符串 <code>s</code> 和 <code>p</code>，找到 <code>s</code> 中所有 <code>p</code> 的异位词子串，并返回这些子串的起始索引。答案顺序不限。</p>
+<h3 id="思路-1">思路<a hidden class="anchor" aria-hidden="true" href="#思路-1">#</a></h3>
+<p>异位词具有两个特点：</p>
+<ol>
+<li>子串长度与 <code>p</code> 相同。</li>
+<li>每个字符出现的次数与 <code>p</code> 相同。</li>
+</ol>
+<p>因此可以维护一个长度固定为 <code>p.length()</code> 的窗口：右边界每次加入一个字符；当窗口过长时，移除最左边的字符。窗口达到目标长度后，比较窗口与 <code>p</code> 的字符频次数组。</p>
+<p>下面的实现假设 <code>s</code> 和 <code>p</code> 只包含小写英文字母。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">class</span> <span class="nc">Solution</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">findAnagrams</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">p</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">indexes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">need</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[</span><span class="n">26</span><span class="o">]</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">window</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[</span><span class="n">26</span><span class="o">]</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">windowLength</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="na">length</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// 统计 p 中每个字符需要出现的次数</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">char</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="na">toCharArray</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">need</span><span class="o">[</span><span class="n">c</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="sc">&#39;a&#39;</span><span class="o">]++</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">0</span><span class="p">;</span><span class="w"> </span><span class="n">right</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="na">length</span><span class="p">();</span><span class="w"> </span><span class="n">right</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// 将右边界字符加入窗口</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">window</span><span class="o">[</span><span class="n">s</span><span class="p">.</span><span class="na">charAt</span><span class="p">(</span><span class="n">right</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="sc">&#39;a&#39;</span><span class="o">]++</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// 窗口过长时，移除最左边的字符</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">right</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">windowLength</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">window</span><span class="o">[</span><span class="n">s</span><span class="p">.</span><span class="na">charAt</span><span class="p">(</span><span class="n">right</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">windowLength</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="sc">&#39;a&#39;</span><span class="o">]--</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// 窗口长度达到 p 的长度，并且字符频次相同</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">right</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">windowLength</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">1</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">Arrays</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">need</span><span class="p">,</span><span class="w"> </span><span class="n">window</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">right</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">windowLength</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">1</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">indexes</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">left</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">indexes</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><p>由于字符集大小固定为 26，比较两个频次数组可以视为常数操作，因此时间复杂度为 <code>O(n)</code>，空间复杂度为 <code>O(1)</code>。</p>
+<h2 id="总结">总结<a hidden class="anchor" aria-hidden="true" href="#总结">#</a></h2>
+<p>这两道题分别对应两种常见的滑动窗口形式：</p>
+<ul>
+<li><strong>可变长度窗口</strong>：窗口不满足条件时移动左边界，例如无重复字符的最长子串。</li>
+<li><strong>固定长度窗口</strong>：始终维护指定长度的区间，例如查找字母异位词。</li>
+</ul>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://kelp-z.github.io/tags/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/">滑动窗口</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="next" href="https://kelp-z.github.io/posts/reference%E8%B6%85%E6%97%B6%E9%97%AE%E9%A2%98%E4%B8%8E%E4%BC%98%E5%8C%96/">
+    <span class="title">下一页 »</span>
+    <span>Reference超时问题与优化</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="https://kelp-z.github.io/">Kelp&#39;s Blog</a></span> · 
+
+    
+    
+    <span>
+        Powered by
+        <a href="https://gohugo.io/?utm_source=papermod" rel="noopener" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" id="top-link" class="top-link hidden" aria-label="go to top" title="Go to Top (Alt + G)" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-up">
+        <polyline points="17 11 12 6 7 11"></polyline>
+        <polyline points="17 18 12 13 7 18"></polyline>
+    </svg>
+</a><script>
+    document.addEventListener("click", function (event) {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+        const target = event.target.closest("a, button");
+        if (!target) return;
+
+        const ripple = document.createElement("span");
+        ripple.className = "click-ripple";
+        ripple.style.left = `${event.clientX}px`;
+        ripple.style.top = `${event.clientY}px`;
+        document.body.appendChild(ripple);
+        ripple.addEventListener("animationend", () => ripple.remove(), { once: true });
+    });
+
+    const tocLinks = Array.from(document.querySelectorAll(".post-single > .toc a[href^='#']"));
+    const tocHeadings = tocLinks.map((link) => {
+        try {
+            return { link, heading: document.getElementById(decodeURIComponent(link.hash.slice(1))) };
+        } catch {
+            return { link, heading: null };
+        }
+    }).filter((item) => item.heading);
+
+    if (tocHeadings.length) {
+        let ticking = false;
+        const updateActiveTocLink = () => {
+            let active = tocHeadings[0];
+            for (const item of tocHeadings) {
+                if (item.heading.getBoundingClientRect().top <= 180) active = item;
+            }
+            tocLinks.forEach((link) => link.classList.toggle("is-active", link === active.link));
+            ticking = false;
+        };
+
+        document.addEventListener("scroll", () => {
+            if (!ticking) {
+                requestAnimationFrame(updateActiveTocLink);
+                ticking = true;
+            }
+        }, { passive: true });
+        updateActiveTocLink();
+    }
+</script>
+
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var toplink = document.getElementById("top-link");
+    window.onscroll = function () {
+        const scrollThreshold = window.innerHeight;
+        if (document.body.scrollTop > scrollThreshold || document.documentElement.scrollTop > scrollThreshold) {
+            toplink.classList.remove("hidden");
+        } else {
+            toplink.classList.add("hidden");
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>
