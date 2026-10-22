@@ -6,8 +6,15 @@
     <description>Recent content on Kelp&#39;s Blog</description>
     <generator>Hugo</generator>
     <language>zh-CN</language>
-    <lastBuildDate>Fri, 25 Sep 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Thu, 22 Oct 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://kelp-z.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>ReserveFlow 第一阶段：启动配置与请求链路</title>
+      <link>https://kelp-z.github.io/posts/reserveflow%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5%E5%90%AF%E5%8A%A8%E9%85%8D%E7%BD%AE%E4%B8%8E%E8%AF%B7%E6%B1%82%E9%93%BE%E8%B7%AF/</link>
+      <pubDate>Thu, 22 Oct 2026 00:00:00 +0000</pubDate>
+      <guid>https://kelp-z.github.io/posts/reserveflow%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5%E5%90%AF%E5%8A%A8%E9%85%8D%E7%BD%AE%E4%B8%8E%E8%AF%B7%E6%B1%82%E9%93%BE%E8%B7%AF/</guid>
+      <description>梳理 ReserveFlow 的启动配置、数据库初始化、登录认证、JWT 校验、可用时段计算和预约写入流程。</description>
+    </item>
     <item>
       <title>滑动窗口</title>
       <link>https://kelp-z.github.io/posts/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/</link>
@@ -549,7 +556,15 @@ public void dispatchPending()
 &lt;p&gt;在我们的项目中，&lt;code&gt;RestTemplateConfig&lt;/code&gt; 类的作用是：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;
-&lt;p&gt;&lt;strong&gt;创建并配置 RestTemplate 实例&lt;/strong&gt;：通过 &lt;code&gt;@Bean&lt;/code&gt; 注解将 RestTemplate 注册为 Spring 容器中的一个 Bean，使其可以被其他组件注入和使用。&lt;/p&gt;</description>
+&lt;p&gt;&lt;strong&gt;创建并配置 RestTemplate 实例&lt;/strong&gt;：通过 &lt;code&gt;@Bean&lt;/code&gt; 注解将 RestTemplate 注册为 Spring 容器中的一个 Bean，使其可以被其他组件注入和使用。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;提供默认配置&lt;/strong&gt;：虽然配置文件中只是简单地返回了一个新的 &lt;code&gt;RestTemplate()&lt;/code&gt; 实例，但这已经包含了 Spring 的默认配置，能够处理大多数常见的 HTTP 请求场景。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;便于后续扩展&lt;/strong&gt;：如果未来需要对 RestTemplate 进行自定义配置（如添加拦截器、设置超时时间等），可以在这个配置类中进行修改。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;</description>
     </item>
     <item>
       <title>动态代理部分源码分析</title>

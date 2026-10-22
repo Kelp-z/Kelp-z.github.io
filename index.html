@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh" dir="auto" data-theme="auto">
 
-<head>
-	<meta name="generator" content="Hugo 0.166.0"><meta charset="utf-8">
+<head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <meta name="robots" content="index, follow">
@@ -94,6 +93,7 @@
   ]
 }
 </script>
+	<meta name="generator" content="Hugo 0.168.0">
 </head>
 <body class="list" id="top">
     <header class="header">
@@ -179,6 +179,26 @@
 </div>
 
     </footer>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">ReserveFlow 第一阶段：启动配置与请求链路
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>ReserveFlow 是基于 slabiak/AppointmentScheduler 改造的 Java 后端学习项目，保留上游 Git 历史与 MIT 许可证
+一、请求如何进入数据库 业务请求的基本路径：
+HTTP 请求 → 安全过滤器链 → Controller → Service → Repository → 数据库 层次 职责 安全过滤器链 在 Controller 之前处理认证、访问权限检查 Controller 接收路径参数、查询参数、请求头和请求体，调用业务服务 Service 执行业务校验、组织查询或写入，并定义事务边界 Repository 提供数据库访问方法 DTO / View 表达接口输入、输出，避免直接返回完整数据库实体 Spring Data JPA 提供 Repository 的运行时实现。例如 findAllByActiveTrueOrderByName() 表示查询启用的资源并按名称排序，不需要手写同名方法的实现。
+JPA 是持久化规范，Hibernate 是其实现之一，负责实体与数据表的映射及底层持久化操作。@Entity、@Table、@Column 描述对象与表结构的对应关系。
+二、启动配置与数据库初始化 1. YAML 与环境变量 server: port: ${SERVER_PORT:8080} 完整属性名是 server.port。${变量名:默认值} 表示读取对应变量，未提供时使用默认值。把 8080 改为 8081 只会改变默认值；若环境变量已指定端口，仍以该变量为准。
+框架配置如 spring.* 由对应框架读取；app.* 是本项目定义的属性，由业务代码通过 @Value 等方式读取。
+...</p>
+  </div>
+  <footer class="entry-footer">
+
+<span title='2026-10-22 00:00:00 +0000 UTC'>2026年10月22日</span>&nbsp;·&nbsp;<span>3 分钟</span>&nbsp;·&nbsp;<span>Kelp</span></footer>
+  <a class="entry-link" aria-label="post link to ReserveFlow 第一阶段：启动配置与请求链路" href="https://kelp-z.github.io/posts/reserveflow%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5%E5%90%AF%E5%8A%A8%E9%85%8D%E7%BD%AE%E4%B8%8E%E8%AF%B7%E6%B1%82%E9%93%BE%E8%B7%AF/"></a>
 </article>
 
 <article class="post-entry"> 
@@ -329,6 +349,8 @@ public Connection getConnection() throws SQLException { // 1. 检查连接池是
     <p>RestTemplate 详解 什么是 RestTemplate RestTemplate 是 Spring 框架中用于发送 HTTP 请求的核心类，它提供了一种简洁、优雅的方式来与 RESTful API 进行交互。RestTemplate 封装了底层的 HTTP 客户端实现，提供了一系列方法来发送不同类型的 HTTP 请求（如 GET、POST、PUT、DELETE 等）。
 RestTemplate 的作用和用途 1. 调用外部 API 发送 HTTP 请求到外部 API 并获取响应 支持各种 HTTP 方法（GET、POST、PUT、DELETE 等） 自动处理请求和响应的序列化与反序列化 2. 微服务间通信 在微服务架构中，不同服务之间通过 HTTP 进行通信 RestTemplate 提供了一种统一的方式来调用其他服务的 API 3. 简化 HTTP 客户端代码 封装了底层的 HTTP 客户端实现，如 Apache HttpClient、OkHttp 等 提供了简洁的 API，避免了手动处理 HTTP 请求的复杂性 4. 支持多种数据格式 支持 JSON、XML 等多种数据格式的转换 自动处理请求体和响应体的序列化与反序列化 RestTemplateConfig 的作用 在我们的项目中，RestTemplateConfig 类的作用是：
 创建并配置 RestTemplate 实例：通过 @Bean 注解将 RestTemplate 注册为 Spring 容器中的一个 Bean，使其可以被其他组件注入和使用。
+提供默认配置：虽然配置文件中只是简单地返回了一个新的 RestTemplate() 实例，但这已经包含了 Spring 的默认配置，能够处理大多数常见的 HTTP 请求场景。
+便于后续扩展：如果未来需要对 RestTemplate 进行自定义配置（如添加拦截器、设置超时时间等），可以在这个配置类中进行修改。
 ...</p>
   </div>
   <footer class="entry-footer">

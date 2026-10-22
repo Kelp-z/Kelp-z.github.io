@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto" data-theme="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>ReserveFlow 第一阶段：启动配置与请求链路 | Kelp&#39;s Blog</title>
+<meta name="keywords" content="">
+<meta name="description" content="梳理 ReserveFlow 的启动配置、数据库初始化、登录认证、JWT 校验、可用时段计算和预约写入流程。">
+<meta name="author" content="Kelp">
+<link rel="canonical" href="https://kelp-z.github.io/posts/reserveflow%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5%E5%90%AF%E5%8A%A8%E9%85%8D%E7%BD%AE%E4%B8%8E%E8%AF%B7%E6%B1%82%E9%93%BE%E8%B7%AF/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.59be42353eb383be08f2ef1e22c24b66949e288239f6531d5833adbbbb6c8688.css" integrity="sha256-Wb5CNT6zg74I8u8eIsJLZpSeKII59lMdWDOtu7tshog=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://kelp-z.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://kelp-z.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://kelp-z.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://kelp-z.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://kelp-z.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://kelp-z.github.io/posts/reserveflow%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5%E5%90%AF%E5%8A%A8%E9%85%8D%E7%BD%AE%E4%B8%8E%E8%AF%B7%E6%B1%82%E9%93%BE%E8%B7%AF/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script><link rel="stylesheet" href="/css/extended/custom.min.81c108bc0f646cc13dc17f8dcbc1e5237d6de6c73ce2a9f96fac8dcdcf313d44.css" integrity="sha256-gcEIvA9kbME9wX&#43;Ny8HlI31t5sc84qn5b6yNzc8xPUQ=">
+<meta property="og:url" content="https://kelp-z.github.io/posts/reserveflow%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5%E5%90%AF%E5%8A%A8%E9%85%8D%E7%BD%AE%E4%B8%8E%E8%AF%B7%E6%B1%82%E9%93%BE%E8%B7%AF/">
+  <meta property="og:site_name" content="Kelp&#39;s Blog">
+  <meta property="og:title" content="ReserveFlow 第一阶段：启动配置与请求链路">
+  <meta property="og:description" content="梳理 ReserveFlow 的启动配置、数据库初始化、登录认证、JWT 校验、可用时段计算和预约写入流程。">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2026-10-22T00:00:00+00:00">
+    <meta property="article:modified_time" content="2026-10-22T00:00:00+00:00">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="ReserveFlow 第一阶段：启动配置与请求链路">
+  <meta name="twitter:description" content="梳理 ReserveFlow 的启动配置、数据库初始化、登录认证、JWT 校验、可用时段计算和预约写入流程。">
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "文章",
+      "item": "https://kelp-z.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "ReserveFlow 第一阶段：启动配置与请求链路",
+      "item": "https://kelp-z.github.io/posts/reserveflow%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5%E5%90%AF%E5%8A%A8%E9%85%8D%E7%BD%AE%E4%B8%8E%E8%AF%B7%E6%B1%82%E9%93%BE%E8%B7%AF/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "ReserveFlow 第一阶段：启动配置与请求链路",
+  "name": "ReserveFlow 第一阶段：启动配置与请求链路",
+  "description": "梳理 ReserveFlow 的启动配置、数据库初始化、登录认证、JWT 校验、可用时段计算和预约写入流程。",
+  "keywords": [
+    
+  ],
+  "articleBody": "ReserveFlow 是基于 slabiak/AppointmentScheduler 改造的 Java 后端学习项目，保留上游 Git 历史与 MIT 许可证\n一、请求如何进入数据库 业务请求的基本路径：\nHTTP 请求 → 安全过滤器链 → Controller → Service → Repository → 数据库 层次 职责 安全过滤器链 在 Controller 之前处理认证、访问权限检查 Controller 接收路径参数、查询参数、请求头和请求体，调用业务服务 Service 执行业务校验、组织查询或写入，并定义事务边界 Repository 提供数据库访问方法 DTO / View 表达接口输入、输出，避免直接返回完整数据库实体 Spring Data JPA 提供 Repository 的运行时实现。例如 findAllByActiveTrueOrderByName() 表示查询启用的资源并按名称排序，不需要手写同名方法的实现。\nJPA 是持久化规范，Hibernate 是其实现之一，负责实体与数据表的映射及底层持久化操作。@Entity、@Table、@Column 描述对象与表结构的对应关系。\n二、启动配置与数据库初始化 1. YAML 与环境变量 server: port: ${SERVER_PORT:8080} 完整属性名是 server.port。${变量名:默认值} 表示读取对应变量，未提供时使用默认值。把 8080 改为 8081 只会改变默认值；若环境变量已指定端口，仍以该变量为准。\n框架配置如 spring.* 由对应框架读取；app.* 是本项目定义的属性，由业务代码通过 @Value 等方式读取。\n2. 基础配置与 local 覆盖 激活 local 后，Spring Boot 同时读取 application.yml 和 application-local.yml。后者覆盖同名属性，未覆盖的配置继续沿用基础文件；命令行参数等更高优先级配置仍可能覆盖它们。\n配置 基础配置 local 配置 数据库 PostgreSQL H2 内存数据库，PostgreSQL 兼容模式 缓存实现 Redis simple，进程内缓存 Redis 自动配置 默认启用 排除指定的 Redis 自动配置 演示数据 默认启用 明确启用 业务邮件通知 默认关闭 明确关闭 Hibernate 表结构检查 validate 沿用 validate JWT 有效期 2h 沿用 2h local 仅用于开发，不代表真实 PostgreSQL、Redis 环境。H2 数据保存在当前应用进程内，重启进程后不会保留原来的预约数据。\n3. 主要属性 属性 作用 spring.application.name 应用名称，不是数据库名称 spring.datasource.url / username / password 数据库地址与连接账号，不是业务用户账号 spring.jpa.hibernate.ddl-auto: validate 检查实体和表结构是否匹配，不创建或修改表 spring.jpa.open-in-view: false 不在整个 Web 请求期间保持 JPA 数据访问上下文，避免把延迟加载延伸到事务外 spring.jpa.properties.hibernate.jdbc.time_zone Hibernate 通过 JDBC 处理时间时使用的时区 server.port HTTP 服务端口 app.zone-id 预约业务使用的时区，例如判断预约是否已过期 app.demo-data.enabled 是否执行演示数据初始化 app.jwt.issuer / secret / ttl JWT 签发者、签名验证密钥、有效期；默认密钥仅用于开发 spring.data.redis.host / port Redis 服务地址与端口 spring.cache.type 缓存实现类型 spring.cache.redis.time-to-live Redis 缓存默认过期时间，当前为五分钟；不是预约有效期 spring.cache.redis.cache-null-values: false 不缓存 null，不等于禁止缓存空列表 spring.mail.host / port 邮件服务器地址与端口 app.mail.enabled / from 业务邮件通知开关与发件人地址 server.error.include-message: never 默认错误响应不附带异常消息，不限制项目自定义错误响应 management.endpoints.web.exposure.include 暴露健康检查、应用信息和 Prometheus 指标端点，不等于允许匿名访问 management.endpoint.health.probes.enabled 启用存活、就绪健康检查 management.health.mail.enabled 是否检查邮件服务健康状态，与发送邮件的业务开关不同 springdoc.swagger-ui.path Swagger UI 的访问路径 4. Flyway、Hibernate 与演示数据 数据库初始化的依赖顺序：\n加载配置并建立数据库连接 → Flyway 执行尚未应用的迁移脚本 → Hibernate validate 校验实体与表结构 → DemoDataInitializer 在启动阶段写入演示数据 Flyway：管理数据库结构版本，执行 db/migration/V1__create_reservation_schema.sql 等迁移，并记录已执行版本，不会每次启动都重复建表。 Hibernate validate：校验已有表结构；缺表或结构不匹配会导致启动失败。 DemoDataInitializer：创建演示用户、资源和开放时间，不负责建表；用户密码经 BCrypt 哈希后保存。 全新的 H2 数据库关闭演示初始化后，表仍可正常建立、应用仍可启动，但默认演示账号不存在，无法登录。关闭初始化不会删除持久化数据库中已经存在的数据。\n三、登录认证与 JWT 签发 POST /api/auth/login → AuthController.login() → AuthenticationService.login() → AuthenticationManager.authenticate() 校验凭证和账号状态 → 查询业务实体 UserAccount → TokenService.issue() 签发 JWT 查询到用户只代表账号存在，不代表密码正确。authenticate() 成功时返回认证结果，失败时抛出异常；当前业务代码即使没有接收返回值，也通过异常阻止错误密码获得 JWT，并返回 401。\nAuthenticationManager 是接口，Spring 注入运行时实现。用户名密码认证的典型路径是 ProviderManager → DaoAuthenticationProvider → UserDetailsService，通过 PasswordEncoder.matches(明文密码, 数据库哈希) 校验密码，不是解密密码或直接比较哈希字符串。\n登录时构造的 UsernamePasswordAuthenticationToken 是 Spring Security 的凭证载体，不是返回给前端的 JWT。认证内部查询用户，业务代码随后又读取 UserAccount，因此当前流程存在重复查询。\nJWT 只包含选定字段，不包含整个用户对象或密码哈希：\n字段 本项目中的含义 sub 令牌所属身份，取用户邮箱；由 .subject(user.getEmail()) 设置 uid 用户 ID roles 业务角色名称，例如 [\"USER\"] iss 签发者 iat / exp 签发时间、过期时间 issue() 使用 HS256 生成带签名的 JWT。签名用于验证完整性，不是加密，不能在 JWT 中放入敏感信息。\n四、JWT 校验与角色映射 后续请求通过请求头携带令牌：\nAuthorization: Bearer 安全过滤器提取 Bearer Token → JwtAuthenticationProvider → NimbusJwtDecoder 校验签名、有效期等 → JwtAuthenticationConverter 构建身份和权限 → 安全上下文保存认证结果 → 接口访问检查通过后进入 Controller GET /api/bookings/me 不带令牌时返回 401；有效令牌通过检查后，Controller 的 Principal 表示当前身份，principal.getName() 默认对应 JWT 的 sub，即用户邮箱。身份已认证但权限不足时返回 403。\nUSER 与 ROLE_USER 属于不同表示层，不会相互改写：\n位置 表示 UserAccount.role 枚举 USER 登录时构建的 UserDetails .roles(\"USER\") 生成权限 ROLE_USER JWT 的 roles [\"USER\"] JWT 转换后的认证对象 转换器添加 ROLE_ 前缀，得到 ROLE_USER 认证判断“身份是否可信”，授权判断“能否执行操作”。本项目登录和资源 GET 接口允许匿名访问，/api/admin/** 要求 MANAGER 或 ADMIN，其余业务接口要求已认证。\n五、资源查询与可用时段计算 资源列表链路：\nGET /api/resources → ResourceController.list() → ResourceService.listActive() → findAllByActiveTrueOrderByName() → 转换为 ResourceView 返回 可用时段接口为 GET /api/resources/{id}/availability?date=YYYY-MM-DD，id 来自路径参数，date 来自查询参数。AvailabilityService 的计算过程：\n检查资源是否存在，查询对应星期的有效开放时间；没有开放时间则返回空列表。 查询当天开放区间内已占用的时段起点。 按 30 分钟生成候选时段起点。 排除已经过去、已经被占用的起点。 将剩余起点转换为半小时的 TimeSlotView。 例如开放时间为 08:00—10:00，则有四个候选时段；若 08:30—09:00 已占用且其他时段均未过期，返回其余三个。\n可用时段是基于开放时间、占用记录和当前时间计算的，不是直接读取一张“可用时段表”。@Cacheable 命中缓存时可以跳过方法体，因此同一资源、同一日期重复查询可能不命中 Service 内部断点。\n六、创建预约与写库路径 POST /api/bookings → JWT 认证与接口访问检查 → BookingController.create() → BookingService.create() → 校验幂等键、用户、预约时间、资源与开放时间 → 保存 Booking → 按 30 分钟拆分并保存 BookingSlot → flush，同步待处理修改到数据库 → 发布预约事件并返回结果，事务正常提交 Controller 从 principal.getName() 获取用户邮箱，不由请求体自行指定预约人。新预约须在未来、不能跨天、起止时间对齐半小时边界，时长为半小时至四小时，并在资源开放时间内。\n一次 08:00—09:00 的预约对应：\n表 记录 用途 bookings 1 条预约 保存用户、资源、完整时间区间和状态 booking_slots 2 条占用，起点为 08:00、08:30 保存具体半小时时段，通过 booking_id 关联预约 save() 不保证立即执行 INSERT；flush() 会同步待处理修改，但不等于提交事务。BookingService.create() 的 @Transactional 将预约和全部时段写入放在同一事务中。\n正常创建返回 201 Created，状态为 CONFIRMED。随后通过 GET /api/bookings/me 查看预约，再查询可用时段，确认已预约的半小时区间不再出现。\n七、幂等键的基本认识 幂等键与预约 ID 不同：客户端在一次新操作发送前生成 Idempotency-Key，后端创建预约时生成 Booking.id。UUID 只是生成编号的一种方式，幂等键并不强制使用 UUID。\n同一用户以相同键、相同资源和时间区间重试：返回原预约，不再创建。 同一用户以相同键提交不同内容：返回 409。 换一个新键：按新的创建操作处理，不会被当作原操作的重试。 关键规则是“新操作用新键，同一次操作重试复用原键”。当前演示前端每次提交直接生成新 UUID，尚未实现跨重试保留原键的完整流程。重复返回原预约时，当前 Controller 仍使用 201，不能仅凭状态码判断是否新增记录。\n数据库中的 (user_id, idempotency_key) 和 (resource_id, slot_start) 唯一约束分别限制重复操作记录、重复时段占用。并发冲突、事务回滚与缓存一致性留到后续阶段深入。\n八、断点调试方法 IDEA 默认快捷键 用途 F8 执行当前行，通常不进入被调用方法 F7 尝试进入被调用方法 Shift+F8 执行完当前方法，返回调用者 F9 继续运行至下一个断点或请求结束 只在关键节点设置断点：Controller 接收参数、Service 业务处理、数据库写入前后。节点之间用 F9，局部观察用 F8，不需要逐行追踪完整框架源码。\n蓝色执行行通常尚未执行；变量应在赋值完成后观察。Frames 显示调用栈，切换栈帧只是查看上下文，不会让程序倒退执行。跟踪 JWT 校验等更早阶段时，需要先设置断点，再重新发送请求。\n",
+  "wordCount" : "501",
+  "inLanguage": "zh",
+  "datePublished": "2026-10-22T00:00:00Z",
+  "dateModified": "2026-10-22T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "Kelp"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://kelp-z.github.io/posts/reserveflow%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5%E5%90%AF%E5%8A%A8%E9%85%8D%E7%BD%AE%E4%B8%8E%E8%AF%B7%E6%B1%82%E9%93%BE%E8%B7%AF/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Kelp's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://kelp-z.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+<body id="top">
+    <header class="header">
+    <nav class="header-nav">
+        <div class="logo">
+            <a href="https://kelp-z.github.io/" accesskey="h" title="Kelp&#39;s Blog (Alt + H)">
+                        
+                    <img src="https://kelp-z.github.io/images/jerry-avatar_hu_c47b23cfb79a27ab.png" alt="" aria-label="logo"
+                        height="42">Kelp&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg class="sun" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu" class="menu">
+            <li>
+                <a href="https://kelp-z.github.io/posts/" title="文章">
+                    <span>文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/archive/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/about/" title="关于">
+                    <span>关于</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <nav class="breadcrumbs" role="navigation" aria-label="Breadcrumb">
+            <a href="/">主页</a>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right">
+                <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+            <a href="/posts/">文章</a>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right">
+        <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+</nav>
+    <h1 class="post-title entry-hint-parent">
+      ReserveFlow 第一阶段：启动配置与请求链路
+    </h1>
+    <div class="post-description">
+      梳理 ReserveFlow 的启动配置、数据库初始化、登录认证、JWT 校验、可用时段计算和预约写入流程。
+    </div>
+    <div class="post-meta">
+
+<span title='2026-10-22 00:00:00 +0000 UTC'>2026年10月22日</span>&nbsp;·&nbsp;<span>3 分钟</span>&nbsp;·&nbsp;<span>Kelp</span>
+
+</div>
+  </header> <details class="toc"  open>
+    <summary accesskey="c" title="(Alt + C)">
+        <span class="title">目录</span>
+    </summary>
+
+    <div class="inner"><ul>
+            <li>
+                <a href="#%e4%b8%80%e8%af%b7%e6%b1%82%e5%a6%82%e4%bd%95%e8%bf%9b%e5%85%a5%e6%95%b0%e6%8d%ae%e5%ba%93" aria-label="一、请求如何进入数据库">一、请求如何进入数据库</a></li>
+            <li>
+                <a href="#%e4%ba%8c%e5%90%af%e5%8a%a8%e9%85%8d%e7%bd%ae%e4%b8%8e%e6%95%b0%e6%8d%ae%e5%ba%93%e5%88%9d%e5%a7%8b%e5%8c%96" aria-label="二、启动配置与数据库初始化">二、启动配置与数据库初始化</a><ul>
+                    
+            <li>
+                <a href="#1-yaml-%e4%b8%8e%e7%8e%af%e5%a2%83%e5%8f%98%e9%87%8f" aria-label="1. YAML 与环境变量">1. YAML 与环境变量</a></li>
+            <li>
+                <a href="#2-%e5%9f%ba%e7%a1%80%e9%85%8d%e7%bd%ae%e4%b8%8e-local-%e8%a6%86%e7%9b%96" aria-label="2. 基础配置与 local 覆盖">2. 基础配置与 local 覆盖</a></li>
+            <li>
+                <a href="#3-%e4%b8%bb%e8%a6%81%e5%b1%9e%e6%80%a7" aria-label="3. 主要属性">3. 主要属性</a></li>
+            <li>
+                <a href="#4-flywayhibernate-%e4%b8%8e%e6%bc%94%e7%a4%ba%e6%95%b0%e6%8d%ae" aria-label="4. Flyway、Hibernate 与演示数据">4. Flyway、Hibernate 与演示数据</a></li></ul>
+            </li>
+            <li>
+                <a href="#%e4%b8%89%e7%99%bb%e5%bd%95%e8%ae%a4%e8%af%81%e4%b8%8e-jwt-%e7%ad%be%e5%8f%91" aria-label="三、登录认证与 JWT 签发">三、登录认证与 JWT 签发</a></li>
+            <li>
+                <a href="#%e5%9b%9bjwt-%e6%a0%a1%e9%aa%8c%e4%b8%8e%e8%a7%92%e8%89%b2%e6%98%a0%e5%b0%84" aria-label="四、JWT 校验与角色映射">四、JWT 校验与角色映射</a></li>
+            <li>
+                <a href="#%e4%ba%94%e8%b5%84%e6%ba%90%e6%9f%a5%e8%af%a2%e4%b8%8e%e5%8f%af%e7%94%a8%e6%97%b6%e6%ae%b5%e8%ae%a1%e7%ae%97" aria-label="五、资源查询与可用时段计算">五、资源查询与可用时段计算</a></li>
+            <li>
+                <a href="#%e5%85%ad%e5%88%9b%e5%bb%ba%e9%a2%84%e7%ba%a6%e4%b8%8e%e5%86%99%e5%ba%93%e8%b7%af%e5%be%84" aria-label="六、创建预约与写库路径">六、创建预约与写库路径</a></li>
+            <li>
+                <a href="#%e4%b8%83%e5%b9%82%e7%ad%89%e9%94%ae%e7%9a%84%e5%9f%ba%e6%9c%ac%e8%ae%a4%e8%af%86" aria-label="七、幂等键的基本认识">七、幂等键的基本认识</a></li>
+            <li>
+                <a href="#%e5%85%ab%e6%96%ad%e7%82%b9%e8%b0%83%e8%af%95%e6%96%b9%e6%b3%95" aria-label="八、断点调试方法">八、断点调试方法</a>
+            </li>
+        </ul>
+    </div>
+</details>
+
+  <div class="post-content md-content"><p>ReserveFlow 是基于 <a href="https://github.com/slabiak/AppointmentScheduler">slabiak/AppointmentScheduler</a> 改造的 Java 后端学习项目，保留上游 Git 历史与 MIT 许可证</p>
+<h2 id="一请求如何进入数据库">一、请求如何进入数据库<a hidden class="anchor" aria-hidden="true" href="#一请求如何进入数据库">#</a></h2>
+<p>业务请求的基本路径：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">HTTP 请求 → 安全过滤器链 → Controller → Service → Repository → 数据库
+</span></span></code></pre></div><table>
+	<thead>
+			<tr>
+					<th>层次</th>
+					<th>职责</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>安全过滤器链</td>
+					<td>在 Controller 之前处理认证、访问权限检查</td>
+			</tr>
+			<tr>
+					<td>Controller</td>
+					<td>接收路径参数、查询参数、请求头和请求体，调用业务服务</td>
+			</tr>
+			<tr>
+					<td>Service</td>
+					<td>执行业务校验、组织查询或写入，并定义事务边界</td>
+			</tr>
+			<tr>
+					<td>Repository</td>
+					<td>提供数据库访问方法</td>
+			</tr>
+			<tr>
+					<td>DTO / View</td>
+					<td>表达接口输入、输出，避免直接返回完整数据库实体</td>
+			</tr>
+	</tbody>
+</table>
+<p>Spring Data JPA 提供 Repository 的运行时实现。例如 <code>findAllByActiveTrueOrderByName()</code> 表示查询启用的资源并按名称排序，不需要手写同名方法的实现。</p>
+<p>JPA 是持久化规范，Hibernate 是其实现之一，负责实体与数据表的映射及底层持久化操作。<code>@Entity</code>、<code>@Table</code>、<code>@Column</code> 描述对象与表结构的对应关系。</p>
+<h2 id="二启动配置与数据库初始化">二、启动配置与数据库初始化<a hidden class="anchor" aria-hidden="true" href="#二启动配置与数据库初始化">#</a></h2>
+<h3 id="1-yaml-与环境变量">1. YAML 与环境变量<a hidden class="anchor" aria-hidden="true" href="#1-yaml-与环境变量">#</a></h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">server</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l">${SERVER_PORT:8080}</span><span class="w">
+</span></span></span></code></pre></div><p>完整属性名是 <code>server.port</code>。<code>${变量名:默认值}</code> 表示读取对应变量，未提供时使用默认值。把 <code>8080</code> 改为 <code>8081</code> 只会改变默认值；若环境变量已指定端口，仍以该变量为准。</p>
+<p>框架配置如 <code>spring.*</code> 由对应框架读取；<code>app.*</code> 是本项目定义的属性，由业务代码通过 <code>@Value</code> 等方式读取。</p>
+<h3 id="2-基础配置与-local-覆盖">2. 基础配置与 local 覆盖<a hidden class="anchor" aria-hidden="true" href="#2-基础配置与-local-覆盖">#</a></h3>
+<p>激活 <code>local</code> 后，Spring Boot 同时读取 <code>application.yml</code> 和 <code>application-local.yml</code>。后者覆盖同名属性，未覆盖的配置继续沿用基础文件；命令行参数等更高优先级配置仍可能覆盖它们。</p>
+<table>
+	<thead>
+			<tr>
+					<th>配置</th>
+					<th>基础配置</th>
+					<th>local 配置</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>数据库</td>
+					<td>PostgreSQL</td>
+					<td>H2 内存数据库，PostgreSQL 兼容模式</td>
+			</tr>
+			<tr>
+					<td>缓存实现</td>
+					<td>Redis</td>
+					<td><code>simple</code>，进程内缓存</td>
+			</tr>
+			<tr>
+					<td>Redis 自动配置</td>
+					<td>默认启用</td>
+					<td>排除指定的 Redis 自动配置</td>
+			</tr>
+			<tr>
+					<td>演示数据</td>
+					<td>默认启用</td>
+					<td>明确启用</td>
+			</tr>
+			<tr>
+					<td>业务邮件通知</td>
+					<td>默认关闭</td>
+					<td>明确关闭</td>
+			</tr>
+			<tr>
+					<td>Hibernate 表结构检查</td>
+					<td><code>validate</code></td>
+					<td>沿用 <code>validate</code></td>
+			</tr>
+			<tr>
+					<td>JWT 有效期</td>
+					<td><code>2h</code></td>
+					<td>沿用 <code>2h</code></td>
+			</tr>
+	</tbody>
+</table>
+<p><code>local</code> 仅用于开发，不代表真实 PostgreSQL、Redis 环境。H2 数据保存在当前应用进程内，重启进程后不会保留原来的预约数据。</p>
+<h3 id="3-主要属性">3. 主要属性<a hidden class="anchor" aria-hidden="true" href="#3-主要属性">#</a></h3>
+<table>
+	<thead>
+			<tr>
+					<th>属性</th>
+					<th>作用</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><code>spring.application.name</code></td>
+					<td>应用名称，不是数据库名称</td>
+			</tr>
+			<tr>
+					<td><code>spring.datasource.url / username / password</code></td>
+					<td>数据库地址与连接账号，不是业务用户账号</td>
+			</tr>
+			<tr>
+					<td><code>spring.jpa.hibernate.ddl-auto: validate</code></td>
+					<td>检查实体和表结构是否匹配，不创建或修改表</td>
+			</tr>
+			<tr>
+					<td><code>spring.jpa.open-in-view: false</code></td>
+					<td>不在整个 Web 请求期间保持 JPA 数据访问上下文，避免把延迟加载延伸到事务外</td>
+			</tr>
+			<tr>
+					<td><code>spring.jpa.properties.hibernate.jdbc.time_zone</code></td>
+					<td>Hibernate 通过 JDBC 处理时间时使用的时区</td>
+			</tr>
+			<tr>
+					<td><code>server.port</code></td>
+					<td>HTTP 服务端口</td>
+			</tr>
+			<tr>
+					<td><code>app.zone-id</code></td>
+					<td>预约业务使用的时区，例如判断预约是否已过期</td>
+			</tr>
+			<tr>
+					<td><code>app.demo-data.enabled</code></td>
+					<td>是否执行演示数据初始化</td>
+			</tr>
+			<tr>
+					<td><code>app.jwt.issuer / secret / ttl</code></td>
+					<td>JWT 签发者、签名验证密钥、有效期；默认密钥仅用于开发</td>
+			</tr>
+			<tr>
+					<td><code>spring.data.redis.host / port</code></td>
+					<td>Redis 服务地址与端口</td>
+			</tr>
+			<tr>
+					<td><code>spring.cache.type</code></td>
+					<td>缓存实现类型</td>
+			</tr>
+			<tr>
+					<td><code>spring.cache.redis.time-to-live</code></td>
+					<td>Redis 缓存默认过期时间，当前为五分钟；不是预约有效期</td>
+			</tr>
+			<tr>
+					<td><code>spring.cache.redis.cache-null-values: false</code></td>
+					<td>不缓存 <code>null</code>，不等于禁止缓存空列表</td>
+			</tr>
+			<tr>
+					<td><code>spring.mail.host / port</code></td>
+					<td>邮件服务器地址与端口</td>
+			</tr>
+			<tr>
+					<td><code>app.mail.enabled / from</code></td>
+					<td>业务邮件通知开关与发件人地址</td>
+			</tr>
+			<tr>
+					<td><code>server.error.include-message: never</code></td>
+					<td>默认错误响应不附带异常消息，不限制项目自定义错误响应</td>
+			</tr>
+			<tr>
+					<td><code>management.endpoints.web.exposure.include</code></td>
+					<td>暴露健康检查、应用信息和 Prometheus 指标端点，不等于允许匿名访问</td>
+			</tr>
+			<tr>
+					<td><code>management.endpoint.health.probes.enabled</code></td>
+					<td>启用存活、就绪健康检查</td>
+			</tr>
+			<tr>
+					<td><code>management.health.mail.enabled</code></td>
+					<td>是否检查邮件服务健康状态，与发送邮件的业务开关不同</td>
+			</tr>
+			<tr>
+					<td><code>springdoc.swagger-ui.path</code></td>
+					<td>Swagger UI 的访问路径</td>
+			</tr>
+	</tbody>
+</table>
+<h3 id="4-flywayhibernate-与演示数据">4. Flyway、Hibernate 与演示数据<a hidden class="anchor" aria-hidden="true" href="#4-flywayhibernate-与演示数据">#</a></h3>
+<p>数据库初始化的依赖顺序：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">加载配置并建立数据库连接
+</span></span><span class="line"><span class="cl">  → Flyway 执行尚未应用的迁移脚本
+</span></span><span class="line"><span class="cl">  → Hibernate validate 校验实体与表结构
+</span></span><span class="line"><span class="cl">  → DemoDataInitializer 在启动阶段写入演示数据
+</span></span></code></pre></div><ul>
+<li><strong>Flyway</strong>：管理数据库结构版本，执行 <code>db/migration/V1__create_reservation_schema.sql</code> 等迁移，并记录已执行版本，不会每次启动都重复建表。</li>
+<li><strong>Hibernate validate</strong>：校验已有表结构；缺表或结构不匹配会导致启动失败。</li>
+<li><strong>DemoDataInitializer</strong>：创建演示用户、资源和开放时间，不负责建表；用户密码经 BCrypt 哈希后保存。</li>
+</ul>
+<p>全新的 H2 数据库关闭演示初始化后，表仍可正常建立、应用仍可启动，但默认演示账号不存在，无法登录。关闭初始化不会删除持久化数据库中已经存在的数据。</p>
+<h2 id="三登录认证与-jwt-签发">三、登录认证与 JWT 签发<a hidden class="anchor" aria-hidden="true" href="#三登录认证与-jwt-签发">#</a></h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">POST /api/auth/login
+</span></span><span class="line"><span class="cl">  → AuthController.login()
+</span></span><span class="line"><span class="cl">  → AuthenticationService.login()
+</span></span><span class="line"><span class="cl">  → AuthenticationManager.authenticate() 校验凭证和账号状态
+</span></span><span class="line"><span class="cl">  → 查询业务实体 UserAccount
+</span></span><span class="line"><span class="cl">  → TokenService.issue() 签发 JWT
+</span></span></code></pre></div><p>查询到用户只代表账号存在，不代表密码正确。<code>authenticate()</code> 成功时返回认证结果，失败时抛出异常；当前业务代码即使没有接收返回值，也通过异常阻止错误密码获得 JWT，并返回 401。</p>
+<p><code>AuthenticationManager</code> 是接口，Spring 注入运行时实现。用户名密码认证的典型路径是 <code>ProviderManager → DaoAuthenticationProvider → UserDetailsService</code>，通过 <code>PasswordEncoder.matches(明文密码, 数据库哈希)</code> 校验密码，不是解密密码或直接比较哈希字符串。</p>
+<p>登录时构造的 <code>UsernamePasswordAuthenticationToken</code> 是 Spring Security 的凭证载体，不是返回给前端的 JWT。认证内部查询用户，业务代码随后又读取 <code>UserAccount</code>，因此当前流程存在重复查询。</p>
+<p>JWT 只包含选定字段，不包含整个用户对象或密码哈希：</p>
+<table>
+	<thead>
+			<tr>
+					<th>字段</th>
+					<th>本项目中的含义</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><code>sub</code></td>
+					<td>令牌所属身份，取用户邮箱；由 <code>.subject(user.getEmail())</code> 设置</td>
+			</tr>
+			<tr>
+					<td><code>uid</code></td>
+					<td>用户 ID</td>
+			</tr>
+			<tr>
+					<td><code>roles</code></td>
+					<td>业务角色名称，例如 <code>[&quot;USER&quot;]</code></td>
+			</tr>
+			<tr>
+					<td><code>iss</code></td>
+					<td>签发者</td>
+			</tr>
+			<tr>
+					<td><code>iat / exp</code></td>
+					<td>签发时间、过期时间</td>
+			</tr>
+	</tbody>
+</table>
+<p><code>issue()</code> 使用 HS256 生成带签名的 JWT。签名用于验证完整性，不是加密，不能在 JWT 中放入敏感信息。</p>
+<h2 id="四jwt-校验与角色映射">四、JWT 校验与角色映射<a hidden class="anchor" aria-hidden="true" href="#四jwt-校验与角色映射">#</a></h2>
+<p>后续请求通过请求头携带令牌：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-http" data-lang="http"><span class="line"><span class="cl"><span class="err">Authorization: Bearer &lt;accessToken&gt;
+</span></span></span></code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">安全过滤器提取 Bearer Token
+</span></span><span class="line"><span class="cl">  → JwtAuthenticationProvider
+</span></span><span class="line"><span class="cl">  → NimbusJwtDecoder 校验签名、有效期等
+</span></span><span class="line"><span class="cl">  → JwtAuthenticationConverter 构建身份和权限
+</span></span><span class="line"><span class="cl">  → 安全上下文保存认证结果
+</span></span><span class="line"><span class="cl">  → 接口访问检查通过后进入 Controller
+</span></span></code></pre></div><p><code>GET /api/bookings/me</code> 不带令牌时返回 401；有效令牌通过检查后，Controller 的 <code>Principal</code> 表示当前身份，<code>principal.getName()</code> 默认对应 JWT 的 <code>sub</code>，即用户邮箱。身份已认证但权限不足时返回 403。</p>
+<p><code>USER</code> 与 <code>ROLE_USER</code> 属于不同表示层，不会相互改写：</p>
+<table>
+	<thead>
+			<tr>
+					<th>位置</th>
+					<th>表示</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><code>UserAccount.role</code></td>
+					<td>枚举 <code>USER</code></td>
+			</tr>
+			<tr>
+					<td>登录时构建的 <code>UserDetails</code></td>
+					<td><code>.roles(&quot;USER&quot;)</code> 生成权限 <code>ROLE_USER</code></td>
+			</tr>
+			<tr>
+					<td>JWT 的 <code>roles</code></td>
+					<td><code>[&quot;USER&quot;]</code></td>
+			</tr>
+			<tr>
+					<td>JWT 转换后的认证对象</td>
+					<td>转换器添加 <code>ROLE_</code> 前缀，得到 <code>ROLE_USER</code></td>
+			</tr>
+	</tbody>
+</table>
+<p>认证判断“身份是否可信”，授权判断“能否执行操作”。本项目登录和资源 GET 接口允许匿名访问，<code>/api/admin/**</code> 要求 <code>MANAGER</code> 或 <code>ADMIN</code>，其余业务接口要求已认证。</p>
+<h2 id="五资源查询与可用时段计算">五、资源查询与可用时段计算<a hidden class="anchor" aria-hidden="true" href="#五资源查询与可用时段计算">#</a></h2>
+<p>资源列表链路：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">GET /api/resources
+</span></span><span class="line"><span class="cl">  → ResourceController.list()
+</span></span><span class="line"><span class="cl">  → ResourceService.listActive()
+</span></span><span class="line"><span class="cl">  → findAllByActiveTrueOrderByName()
+</span></span><span class="line"><span class="cl">  → 转换为 ResourceView 返回
+</span></span></code></pre></div><p>可用时段接口为 <code>GET /api/resources/{id}/availability?date=YYYY-MM-DD</code>，<code>id</code> 来自路径参数，<code>date</code> 来自查询参数。<code>AvailabilityService</code> 的计算过程：</p>
+<ol>
+<li>检查资源是否存在，查询对应星期的有效开放时间；没有开放时间则返回空列表。</li>
+<li>查询当天开放区间内已占用的时段起点。</li>
+<li>按 30 分钟生成候选时段起点。</li>
+<li>排除已经过去、已经被占用的起点。</li>
+<li>将剩余起点转换为半小时的 <code>TimeSlotView</code>。</li>
+</ol>
+<p>例如开放时间为 <code>08:00—10:00</code>，则有四个候选时段；若 <code>08:30—09:00</code> 已占用且其他时段均未过期，返回其余三个。</p>
+<p>可用时段是基于开放时间、占用记录和当前时间计算的，不是直接读取一张“可用时段表”。<code>@Cacheable</code> 命中缓存时可以跳过方法体，因此同一资源、同一日期重复查询可能不命中 Service 内部断点。</p>
+<h2 id="六创建预约与写库路径">六、创建预约与写库路径<a hidden class="anchor" aria-hidden="true" href="#六创建预约与写库路径">#</a></h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">POST /api/bookings
+</span></span><span class="line"><span class="cl">  → JWT 认证与接口访问检查
+</span></span><span class="line"><span class="cl">  → BookingController.create()
+</span></span><span class="line"><span class="cl">  → BookingService.create()
+</span></span><span class="line"><span class="cl">  → 校验幂等键、用户、预约时间、资源与开放时间
+</span></span><span class="line"><span class="cl">  → 保存 Booking
+</span></span><span class="line"><span class="cl">  → 按 30 分钟拆分并保存 BookingSlot
+</span></span><span class="line"><span class="cl">  → flush，同步待处理修改到数据库
+</span></span><span class="line"><span class="cl">  → 发布预约事件并返回结果，事务正常提交
+</span></span></code></pre></div><p>Controller 从 <code>principal.getName()</code> 获取用户邮箱，不由请求体自行指定预约人。新预约须在未来、不能跨天、起止时间对齐半小时边界，时长为半小时至四小时，并在资源开放时间内。</p>
+<p>一次 <code>08:00—09:00</code> 的预约对应：</p>
+<table>
+	<thead>
+			<tr>
+					<th>表</th>
+					<th>记录</th>
+					<th>用途</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><code>bookings</code></td>
+					<td>1 条预约</td>
+					<td>保存用户、资源、完整时间区间和状态</td>
+			</tr>
+			<tr>
+					<td><code>booking_slots</code></td>
+					<td>2 条占用，起点为 <code>08:00</code>、<code>08:30</code></td>
+					<td>保存具体半小时时段，通过 <code>booking_id</code> 关联预约</td>
+			</tr>
+	</tbody>
+</table>
+<p><code>save()</code> 不保证立即执行 INSERT；<code>flush()</code> 会同步待处理修改，但不等于提交事务。<code>BookingService.create()</code> 的 <code>@Transactional</code> 将预约和全部时段写入放在同一事务中。</p>
+<p>正常创建返回 <code>201 Created</code>，状态为 <code>CONFIRMED</code>。随后通过 <code>GET /api/bookings/me</code> 查看预约，再查询可用时段，确认已预约的半小时区间不再出现。</p>
+<h2 id="七幂等键的基本认识">七、幂等键的基本认识<a hidden class="anchor" aria-hidden="true" href="#七幂等键的基本认识">#</a></h2>
+<p>幂等键与预约 ID 不同：客户端在一次新操作发送前生成 <code>Idempotency-Key</code>，后端创建预约时生成 <code>Booking.id</code>。UUID 只是生成编号的一种方式，幂等键并不强制使用 UUID。</p>
+<ul>
+<li>同一用户以相同键、相同资源和时间区间重试：返回原预约，不再创建。</li>
+<li>同一用户以相同键提交不同内容：返回 409。</li>
+<li>换一个新键：按新的创建操作处理，不会被当作原操作的重试。</li>
+</ul>
+<p>关键规则是“新操作用新键，同一次操作重试复用原键”。当前演示前端每次提交直接生成新 UUID，尚未实现跨重试保留原键的完整流程。重复返回原预约时，当前 Controller 仍使用 201，不能仅凭状态码判断是否新增记录。</p>
+<p>数据库中的 <code>(user_id, idempotency_key)</code> 和 <code>(resource_id, slot_start)</code> 唯一约束分别限制重复操作记录、重复时段占用。并发冲突、事务回滚与缓存一致性留到后续阶段深入。</p>
+<h2 id="八断点调试方法">八、断点调试方法<a hidden class="anchor" aria-hidden="true" href="#八断点调试方法">#</a></h2>
+<table>
+	<thead>
+			<tr>
+					<th>IDEA 默认快捷键</th>
+					<th>用途</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>F8</td>
+					<td>执行当前行，通常不进入被调用方法</td>
+			</tr>
+			<tr>
+					<td>F7</td>
+					<td>尝试进入被调用方法</td>
+			</tr>
+			<tr>
+					<td>Shift+F8</td>
+					<td>执行完当前方法，返回调用者</td>
+			</tr>
+			<tr>
+					<td>F9</td>
+					<td>继续运行至下一个断点或请求结束</td>
+			</tr>
+	</tbody>
+</table>
+<p>只在关键节点设置断点：Controller 接收参数、Service 业务处理、数据库写入前后。节点之间用 F9，局部观察用 F8，不需要逐行追踪完整框架源码。</p>
+<p>蓝色执行行通常尚未执行；变量应在赋值完成后观察。Frames 显示调用栈，切换栈帧只是查看上下文，不会让程序倒退执行。跟踪 JWT 校验等更早阶段时，需要先设置断点，再重新发送请求。</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+<nav class="paginav">
+  <a class="next" href="https://kelp-z.github.io/posts/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3/">
+    <span class="title">下一页 »</span>
+    <span>滑动窗口</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="https://kelp-z.github.io/">Kelp&#39;s Blog</a></span> · 
+
+    
+    
+    <span>
+        Powered by
+        <a href="https://gohugo.io/?utm_source=papermod" rel="noopener" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" id="top-link" class="top-link hidden" aria-label="go to top" title="Go to Top (Alt + G)" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-up">
+        <polyline points="17 11 12 6 7 11"></polyline>
+        <polyline points="17 18 12 13 7 18"></polyline>
+    </svg>
+</a><script>
+    document.addEventListener("click", function (event) {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+        const target = event.target.closest("a, button");
+        if (!target) return;
+
+        const ripple = document.createElement("span");
+        ripple.className = "click-ripple";
+        ripple.style.left = `${event.clientX}px`;
+        ripple.style.top = `${event.clientY}px`;
+        document.body.appendChild(ripple);
+        ripple.addEventListener("animationend", () => ripple.remove(), { once: true });
+    });
+
+    const tocLinks = Array.from(document.querySelectorAll(".post-single > .toc a[href^='#']"));
+    const tocHeadings = tocLinks.map((link) => {
+        try {
+            return { link, heading: document.getElementById(decodeURIComponent(link.hash.slice(1))) };
+        } catch {
+            return { link, heading: null };
+        }
+    }).filter((item) => item.heading);
+
+    if (tocHeadings.length) {
+        let ticking = false;
+        const updateActiveTocLink = () => {
+            let active = tocHeadings[0];
+            for (const item of tocHeadings) {
+                if (item.heading.getBoundingClientRect().top <= 180) active = item;
+            }
+            tocLinks.forEach((link) => link.classList.toggle("is-active", link === active.link));
+            ticking = false;
+        };
+
+        document.addEventListener("scroll", () => {
+            if (!ticking) {
+                requestAnimationFrame(updateActiveTocLink);
+                ticking = true;
+            }
+        }, { passive: true });
+        updateActiveTocLink();
+    }
+</script>
+
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var toplink = document.getElementById("top-link");
+    window.onscroll = function () {
+        const scrollThreshold = window.innerHeight;
+        if (document.body.scrollTop > scrollThreshold || document.documentElement.scrollTop > scrollThreshold) {
+            toplink.classList.remove("hidden");
+        } else {
+            toplink.classList.add("hidden");
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>
