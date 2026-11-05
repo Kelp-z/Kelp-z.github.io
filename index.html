@@ -93,7 +93,7 @@
   ]
 }
 </script>
-	<meta name="generator" content="Hugo 0.168.0">
+	<meta name="generator" content="Hugo 0.169.0">
 </head>
 <body class="list" id="top">
     <header class="header">
@@ -179,6 +179,29 @@
 </div>
 
     </footer>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">ReserveFlow 二
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、一次预约为什么要拆成多个时段 项目按 30 分钟粒度保存预约占用。用户预约 10:00—11:30 时，完整预约保存到 bookings 表，同时生成三个 booking_slots：
+10:00 10:30 11:00 bookings 保存一次预约的整体信息：用户、资源、完整起止时间、状态和幂等键。booking_slots 保存具体被占用的半小时时段，并通过 booking_id 关联到这笔预约。
+这样设计后，查询可用时段时可以直接判断某个半小时起点是否已经被占用，也可以用数据库约束阻止同一资源的同一时段被重复写入。
+二、事务保证一次预约整体成功 BookingService.create() 使用 @Transactional：
+开启事务 → 保存 Booking → 保存全部 BookingSlot → flush → 方法正常返回 → 提交事务 一次预约可能包含多条 SQL。单条 SQL 执行成功，不代表整个事务已经提交。假如预约记录和第一个时段已经写入，第二个时段发生冲突，异常会使整个事务回滚，之前写入的预约和时段也会被撤销。
+这保证了系统不会留下“预约记录存在，但只有部分时段被占用”的不完整数据。事务的核心要求是：一次业务操作中的相关写入要么全部成功，要么全部撤销。
+三、数据库唯一约束是并发预约的最后防线 booking_slots 表中有约束：
+UNIQUE (resource_id, slot_start) resource_id 是被预约资源的 ID，例如会议室或设备；slot_start 是半小时时段的起始时间。两列的组合不能重复：
+resource_id slot_start 结果 1 2026-10-23 10:00 第一次插入成功 1 2026-10-23 10:30 成功，这是另一个时段 2 2026-10-23 10:00 成功，这是另一个资源 1 2026-10-23 10:00 失败，组合重复 查询可用时段只能说明“查询当时看起来空闲”。查询完成和真正插入之间存在时间间隔，多个请求可能同时查到空闲。因此，数据库写入时的唯一约束才是最终裁决。
+...</p>
+  </div>
+  <footer class="entry-footer">
+
+<span title='2026-11-05 00:00:00 +0000 UTC'>2026年11月5日</span>&nbsp;·&nbsp;<span>1 分钟</span>&nbsp;·&nbsp;<span>Kelp</span></footer>
+  <a class="entry-link" aria-label="post link to ReserveFlow 二" href="https://kelp-z.github.io/posts/reserveflow-%E4%BA%8C/"></a>
 </article>
 
 <article class="post-entry"> 
@@ -358,20 +381,12 @@ RestTemplate 的作用和用途 1. 调用外部 API 发送 HTTP 请求到外部 
 <span title='2026-09-07 00:00:00 +0000 UTC'>2026年9月7日</span>&nbsp;·&nbsp;<span>1 分钟</span>&nbsp;·&nbsp;<span>Kelp</span></footer>
   <a class="entry-link" aria-label="post link to RestTemplate 详解" href="https://kelp-z.github.io/posts/resttemplate/"></a>
 </article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
-    <h2 class="entry-hint-parent">动态代理部分源码分析
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p>动态代理 创建代理的参数含义 //这是java中import java.lang.reflect.Proxy包下的一个方法用来创建代理 public static Object newProxyInstance(ClassLoader loader,Class&lt;?&gt;[] interfaces,InvocationHandler h) //参数一：指定类加载器 //参数二：指定接口 //参数三：指定代理对象要干么事情（可以用匿名内部类的形式创建这个参数，参数里要重写invoke方法，当你调用代	理对象的方法时，会自动调用invoke里的方法） public Objec invoke(Object proxy,Menthod,object[] args)throws throwable{ } //参数一：代理的对象 //参数二：要运行的方法 //参数三：调用方法时传递的实参 源码解析： @CallerSensitive public static Object newProxyInstance(ClassLoader loader, Class&lt;?&gt;[] interfaces, InvocationHandler h) { //先调用了requireNonNull(h)方法，判断InvocationHandler对象是否为空，若为空则抛出空指针异常 InvocationHandler h) Objects.requireNonNull(h); /*这一段代码是在检查是否有安全管理器，如果没有则把caller设置为空，如果有就调用 Reflection.getCallerClass()获取当前调用newProxyInstance方法的那个类。 在java早期，安全管理器会控制代码权限，它会检查哪个类在调用newProxyInstance，这个类有没有权限在某个包下创建代理类。现在安全管理器基本上没人用了。所以这行段代码在大部分情况下，caller都等于null */ @SuppressWarnings(&#34;removal&#34;) final Class&lt;?&gt; caller = System.getSecurityManager() == null ? null : Reflection.getCallerClass(); //获取代理类的构造器 Constructor&lt;?&gt; cons = getProxyConstructor(caller, loader, interfaces); //创建代理对象并返回 return newProxyInstance(caller, cons, h); } //对getProxyConstructor方法的分析 private static Constructor&lt;?&gt; getProxyConstructor(Class&lt;?&gt; caller, ClassLoader loader, Class&lt;?&gt;... interfaces) { //只有1个接口的情况 if (interfaces.length == 1) { Class&lt;?&gt; intf = interfaces[0]; //权限检验，caller大部分情况为空，checkProxyAccess通常不会执行，在上面解释过 if (caller != null) { checkProxyAccess(caller, loader, intf); } /* 首先，我们要先知道return这一段在干什么——以类加载器和接口为key，去缓存里查找代理类的构造器，如果缓存里没有，就生成对应的构造器存入缓存，并返回构造器 接下来我们再具体分析 proxyCache是一个双层缓存，第一层key是你要代理的接口（intf），第二层是类加载器（loader） computeIfAbsent方法是Map接口中的一个方法，它的作用是，如果Map中有这个key，就返回对应的Value；如果没有，就生成一个Value，存入Map，并返回 lambda表达式中的参数ld是类加载器loader，clv.key（）可以获取到传入的接口intf 那么这段代码我们可以解释为，先通过 proxyCache.sub(intf)找到属于这个接口的子缓存，在调用computeIfAbsent方法以类加载器（loader）作为key去查对应的ProxyBuilder对象，如果缓存里没有，就调用这个lambda表达式(ld, clv) -&gt; new ProxyBuilder(ld, clv.key()）创建一个ProxyBuilder对象，最后在通过.build()方法获取到对应的构造器。 */ return proxyCache.sub(intf).computeIfAbsent( loader, (ld, clv) -&gt; new ProxyBuilder(ld, clv.key()).build() ); } else { //有多个接口的情况，与上面只有1个接口的情况相似 final Class&lt;?&gt;[] intfsArray = interfaces.clone(); if (caller != null) { checkProxyAccess(caller, loader, intfsArray); } final List&lt;Class&lt;?&gt;&gt; intfs = Arrays.asList(intfsArray); return proxyCache.sub(intfs).computeIfAbsent( loader, (ld, clv) -&gt; new ProxyBuilder(ld, clv.key()).build() ); } } //创建代理对象的方法 private static Object newProxyInstance(Class&lt;?&gt; caller, // null if no SecurityManager Constructor&lt;?&gt; cons, InvocationHandler h) { /* * Invoke its constructor with the designated invocation handler. */ try { if (caller != null) { checkNewProxyPermission(caller, cons.getDeclaringClass()); } //这一行代码是通过反射获取了代理类的唯一构造方法，把你写的InvocationHandler实例也就是h作为参数传入，这个h会 被保存到父类Proxy的成员变量h中，最后创建并返回这个代理类的实例对象 return cons.newInstance(new Object[]{h});//整段代码的核心部分，其它都是异常处理。 } catch (IllegalAccessException | InstantiationException e) { throw new InternalError(e.toString(), e); } catch (InvocationTargetException e) { Throwable t = e.getCause(); if (t instanceof RuntimeException re) { throw re; } else { throw new InternalError(t.toString(), t); } } } </p>
-  </div>
-  <footer class="entry-footer">
-
-<span title='2026-09-07 00:00:00 +0000 UTC'>2026年9月7日</span>&nbsp;·&nbsp;<span>2 分钟</span>&nbsp;·&nbsp;<span>Kelp</span></footer>
-  <a class="entry-link" aria-label="post link to 动态代理部分源码分析" href="https://kelp-z.github.io/posts/%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86%E9%83%A8%E5%88%86%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/"></a>
-</article>
+<footer class="page-footer">
+  <nav class="pagination">
+    <a class="next" href="https://kelp-z.github.io/page/2/">下一页&nbsp;&nbsp;»
+    </a>
+  </nav>
+</footer>
     </main>
     
 <footer class="footer">

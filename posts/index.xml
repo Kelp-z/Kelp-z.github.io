@@ -6,8 +6,15 @@
     <description>Recent content in 文章 on Kelp&#39;s Blog</description>
     <generator>Hugo</generator>
     <language>zh-CN</language>
-    <lastBuildDate>Thu, 22 Oct 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Thu, 05 Nov 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://kelp-z.github.io/posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>ReserveFlow 二</title>
+      <link>https://kelp-z.github.io/posts/reserveflow-%E4%BA%8C/</link>
+      <pubDate>Thu, 05 Nov 2026 00:00:00 +0000</pubDate>
+      <guid>https://kelp-z.github.io/posts/reserveflow-%E4%BA%8C/</guid>
+      <description>理解 ReserveFlow 中预约事务、数据库唯一约束、并发冲突与接口幂等。</description>
+    </item>
     <item>
       <title>ReserveFlow 第一阶段：启动配置与请求链路</title>
       <link>https://kelp-z.github.io/posts/reserveflow%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5%E5%90%AF%E5%8A%A8%E9%85%8D%E7%BD%AE%E4%B8%8E%E8%AF%B7%E6%B1%82%E9%93%BE%E8%B7%AF/</link>

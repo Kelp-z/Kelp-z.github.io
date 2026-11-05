@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto" data-theme="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>ReserveFlow 二 | Kelp&#39;s Blog</title>
+<meta name="keywords" content="">
+<meta name="description" content="理解 ReserveFlow 中预约事务、数据库唯一约束、并发冲突与接口幂等。">
+<meta name="author" content="Kelp">
+<link rel="canonical" href="https://kelp-z.github.io/posts/reserveflow-%E4%BA%8C/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.59be42353eb383be08f2ef1e22c24b66949e288239f6531d5833adbbbb6c8688.css" integrity="sha256-Wb5CNT6zg74I8u8eIsJLZpSeKII59lMdWDOtu7tshog=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://kelp-z.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://kelp-z.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://kelp-z.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://kelp-z.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://kelp-z.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://kelp-z.github.io/posts/reserveflow-%E4%BA%8C/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script><link rel="stylesheet" href="/css/extended/custom.min.81c108bc0f646cc13dc17f8dcbc1e5237d6de6c73ce2a9f96fac8dcdcf313d44.css" integrity="sha256-gcEIvA9kbME9wX&#43;Ny8HlI31t5sc84qn5b6yNzc8xPUQ=">
+<meta property="og:url" content="https://kelp-z.github.io/posts/reserveflow-%E4%BA%8C/">
+  <meta property="og:site_name" content="Kelp&#39;s Blog">
+  <meta property="og:title" content="ReserveFlow 二">
+  <meta property="og:description" content="理解 ReserveFlow 中预约事务、数据库唯一约束、并发冲突与接口幂等。">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2026-11-05T00:00:00+00:00">
+    <meta property="article:modified_time" content="2026-11-05T00:00:00+00:00">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="ReserveFlow 二">
+  <meta name="twitter:description" content="理解 ReserveFlow 中预约事务、数据库唯一约束、并发冲突与接口幂等。">
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "文章",
+      "item": "https://kelp-z.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "ReserveFlow 二",
+      "item": "https://kelp-z.github.io/posts/reserveflow-%E4%BA%8C/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "ReserveFlow 二",
+  "name": "ReserveFlow 二",
+  "description": "理解 ReserveFlow 中预约事务、数据库唯一约束、并发冲突与接口幂等。",
+  "keywords": [
+    
+  ],
+  "articleBody": "一、一次预约为什么要拆成多个时段 项目按 30 分钟粒度保存预约占用。用户预约 10:00—11:30 时，完整预约保存到 bookings 表，同时生成三个 booking_slots：\n10:00 10:30 11:00 bookings 保存一次预约的整体信息：用户、资源、完整起止时间、状态和幂等键。booking_slots 保存具体被占用的半小时时段，并通过 booking_id 关联到这笔预约。\n这样设计后，查询可用时段时可以直接判断某个半小时起点是否已经被占用，也可以用数据库约束阻止同一资源的同一时段被重复写入。\n二、事务保证一次预约整体成功 BookingService.create() 使用 @Transactional：\n开启事务 → 保存 Booking → 保存全部 BookingSlot → flush → 方法正常返回 → 提交事务 一次预约可能包含多条 SQL。单条 SQL 执行成功，不代表整个事务已经提交。假如预约记录和第一个时段已经写入，第二个时段发生冲突，异常会使整个事务回滚，之前写入的预约和时段也会被撤销。\n这保证了系统不会留下“预约记录存在，但只有部分时段被占用”的不完整数据。事务的核心要求是：一次业务操作中的相关写入要么全部成功，要么全部撤销。\n三、数据库唯一约束是并发预约的最后防线 booking_slots 表中有约束：\nUNIQUE (resource_id, slot_start) resource_id 是被预约资源的 ID，例如会议室或设备；slot_start 是半小时时段的起始时间。两列的组合不能重复：\nresource_id slot_start 结果 1 2026-10-23 10:00 第一次插入成功 1 2026-10-23 10:30 成功，这是另一个时段 2 2026-10-23 10:00 成功，这是另一个资源 1 2026-10-23 10:00 失败，组合重复 查询可用时段只能说明“查询当时看起来空闲”。查询完成和真正插入之间存在时间间隔，多个请求可能同时查到空闲。因此，数据库写入时的唯一约束才是最终裁决。\n四、并发请求如何被处理 假设 20 个请求同时预约资源 1 的 10:00—10:30，并且每个请求使用不同的幂等键：\n请求 A 查询：空闲 请求 B 查询：空闲 请求 C 查询：空闲 ↓ 多个事务尝试插入同一个 (resource_id, slot_start) ↓ 数据库唯一约束裁决 ↓ 一个事务成功，其他事务失败并回滚 项目的并发测试使用 20 个线程和 CountDownLatch，先让所有线程准备好，再同时放行。测试最终验证：\nassertThat(successes).hasValue(1); assertThat(bookings.count()).isEqualTo(1); 这说明只有一个请求成功，而且失败请求创建的 Booking 也没有残留。失败请求通常返回 409 Conflict，表示请求与已经成功占用的时段发生冲突。\n这也是为什么 Redis 不能替代数据库唯一约束。Redis 可以缓存可用时段，也可以作为辅助锁减少同时进入临界区的请求，但锁可能过期、应用可能崩溃、网络可能中断。真正阻止重复占用的仍然是数据库约束。\n五、Redis 锁的作用 Redis 锁是一种分布式互斥锁，用来让多个线程或多个应用实例尽量不要同时执行同一段关键代码。常见形式是：\nSET lock:resource:1:10:00 request-id NX PX 10000 NX 表示只有 key 不存在时才创建，PX 设置自动过期时间，request-id 用来确认释放锁时确实是当前请求持有的锁。\nRedis 锁适合减少重复计算、协调定时任务或降低数据库竞争。预约系统即使使用 Redis 锁，也必须保留 PostgreSQL 的唯一约束，因为 Redis 锁失效后不能阻止两个请求同时写入数据库。\n六、幂等键解决重复请求 并发和幂等解决的是不同问题。并发关注多个请求同时争抢同一时段；幂等关注同一个请求因为超时或重试被重复发送。\n例如客户端第一次发送预约后没有收到响应，客户端可以使用同一个 Idempotency-Key 重试：\n第一次：phase2-booking-001，资源 1，10:00—10:30 重试： phase2-booking-001，资源 1，10:00—10:30 项目通过 (user_id, idempotency_key) 唯一约束限制同一个用户重复使用幂等键。Service 先按用户和幂等键查询已有预约：\n相同 key、相同资源和时间：返回原预约； 相同 key、不同资源或时间：返回 409 Conflict； 新操作使用新 key：按新的预约处理。 所以，幂等键不是预约 ID，也不是资源 ID。它是客户端为“一次业务操作”生成的标识，同一次操作重试时复用，发起新操作时更换。\n七、三个约束分别解决什么问题 事务 保证一笔预约的多条写入整体成功或整体回滚 唯一约束 (resource_id, slot_start) 防止并发请求重复占用同一个资源时段 唯一约束 (user_id, idempotency_key) 防止同一个用户重复创建同一业务请求 它们不能互相替代。事务解决完整性，时段唯一约束解决资源竞争，幂等键解决网络重试。\n",
+  "wordCount" : "171",
+  "inLanguage": "zh",
+  "datePublished": "2026-11-05T00:00:00Z",
+  "dateModified": "2026-11-05T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "Kelp"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://kelp-z.github.io/posts/reserveflow-%E4%BA%8C/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Kelp's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://kelp-z.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+<body id="top">
+    <header class="header">
+    <nav class="header-nav">
+        <div class="logo">
+            <a href="https://kelp-z.github.io/" accesskey="h" title="Kelp&#39;s Blog (Alt + H)">
+                        
+                    <img src="https://kelp-z.github.io/images/jerry-avatar_hu_c47b23cfb79a27ab.png" alt="" aria-label="logo"
+                        height="42">Kelp&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg class="sun" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu" class="menu">
+            <li>
+                <a href="https://kelp-z.github.io/posts/" title="文章">
+                    <span>文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/archive/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/about/" title="关于">
+                    <span>关于</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <nav class="breadcrumbs" role="navigation" aria-label="Breadcrumb">
+            <a href="/">主页</a>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right">
+                <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+            <a href="/posts/">文章</a>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right">
+        <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+</nav>
+    <h1 class="post-title entry-hint-parent">
+      ReserveFlow 二
+    </h1>
+    <div class="post-description">
+      理解 ReserveFlow 中预约事务、数据库唯一约束、并发冲突与接口幂等。
+    </div>
+    <div class="post-meta">
+
+<span title='2026-11-05 00:00:00 +0000 UTC'>2026年11月5日</span>&nbsp;·&nbsp;<span>1 分钟</span>&nbsp;·&nbsp;<span>Kelp</span>
+
+</div>
+  </header> <details class="toc"  open>
+    <summary accesskey="c" title="(Alt + C)">
+        <span class="title">目录</span>
+    </summary>
+
+    <div class="inner"><ul>
+            <li>
+                <a href="#%e4%b8%80%e4%b8%80%e6%ac%a1%e9%a2%84%e7%ba%a6%e4%b8%ba%e4%bb%80%e4%b9%88%e8%a6%81%e6%8b%86%e6%88%90%e5%a4%9a%e4%b8%aa%e6%97%b6%e6%ae%b5" aria-label="一、一次预约为什么要拆成多个时段">一、一次预约为什么要拆成多个时段</a></li>
+            <li>
+                <a href="#%e4%ba%8c%e4%ba%8b%e5%8a%a1%e4%bf%9d%e8%af%81%e4%b8%80%e6%ac%a1%e9%a2%84%e7%ba%a6%e6%95%b4%e4%bd%93%e6%88%90%e5%8a%9f" aria-label="二、事务保证一次预约整体成功">二、事务保证一次预约整体成功</a></li>
+            <li>
+                <a href="#%e4%b8%89%e6%95%b0%e6%8d%ae%e5%ba%93%e5%94%af%e4%b8%80%e7%ba%a6%e6%9d%9f%e6%98%af%e5%b9%b6%e5%8f%91%e9%a2%84%e7%ba%a6%e7%9a%84%e6%9c%80%e5%90%8e%e9%98%b2%e7%ba%bf" aria-label="三、数据库唯一约束是并发预约的最后防线">三、数据库唯一约束是并发预约的最后防线</a></li>
+            <li>
+                <a href="#%e5%9b%9b%e5%b9%b6%e5%8f%91%e8%af%b7%e6%b1%82%e5%a6%82%e4%bd%95%e8%a2%ab%e5%a4%84%e7%90%86" aria-label="四、并发请求如何被处理">四、并发请求如何被处理</a></li>
+            <li>
+                <a href="#%e4%ba%94redis-%e9%94%81%e7%9a%84%e4%bd%9c%e7%94%a8" aria-label="五、Redis 锁的作用">五、Redis 锁的作用</a></li>
+            <li>
+                <a href="#%e5%85%ad%e5%b9%82%e7%ad%89%e9%94%ae%e8%a7%a3%e5%86%b3%e9%87%8d%e5%a4%8d%e8%af%b7%e6%b1%82" aria-label="六、幂等键解决重复请求">六、幂等键解决重复请求</a></li>
+            <li>
+                <a href="#%e4%b8%83%e4%b8%89%e4%b8%aa%e7%ba%a6%e6%9d%9f%e5%88%86%e5%88%ab%e8%a7%a3%e5%86%b3%e4%bb%80%e4%b9%88%e9%97%ae%e9%a2%98" aria-label="七、三个约束分别解决什么问题">七、三个约束分别解决什么问题</a>
+            </li>
+        </ul>
+    </div>
+</details>
+
+  <div class="post-content md-content"><h2 id="一一次预约为什么要拆成多个时段">一、一次预约为什么要拆成多个时段<a hidden class="anchor" aria-hidden="true" href="#一一次预约为什么要拆成多个时段">#</a></h2>
+<p>项目按 30 分钟粒度保存预约占用。用户预约 <code>10:00—11:30</code> 时，完整预约保存到 <code>bookings</code> 表，同时生成三个 <code>booking_slots</code>：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">10:00
+</span></span><span class="line"><span class="cl">10:30
+</span></span><span class="line"><span class="cl">11:00
+</span></span></code></pre></div><p><code>bookings</code> 保存一次预约的整体信息：用户、资源、完整起止时间、状态和幂等键。<code>booking_slots</code> 保存具体被占用的半小时时段，并通过 <code>booking_id</code> 关联到这笔预约。</p>
+<p>这样设计后，查询可用时段时可以直接判断某个半小时起点是否已经被占用，也可以用数据库约束阻止同一资源的同一时段被重复写入。</p>
+<h2 id="二事务保证一次预约整体成功">二、事务保证一次预约整体成功<a hidden class="anchor" aria-hidden="true" href="#二事务保证一次预约整体成功">#</a></h2>
+<p><code>BookingService.create()</code> 使用 <code>@Transactional</code>：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">开启事务
+</span></span><span class="line"><span class="cl">  → 保存 Booking
+</span></span><span class="line"><span class="cl">  → 保存全部 BookingSlot
+</span></span><span class="line"><span class="cl">  → flush
+</span></span><span class="line"><span class="cl">  → 方法正常返回
+</span></span><span class="line"><span class="cl">  → 提交事务
+</span></span></code></pre></div><p>一次预约可能包含多条 SQL。单条 SQL 执行成功，不代表整个事务已经提交。假如预约记录和第一个时段已经写入，第二个时段发生冲突，异常会使整个事务回滚，之前写入的预约和时段也会被撤销。</p>
+<p>这保证了系统不会留下“预约记录存在，但只有部分时段被占用”的不完整数据。事务的核心要求是：一次业务操作中的相关写入要么全部成功，要么全部撤销。</p>
+<h2 id="三数据库唯一约束是并发预约的最后防线">三、数据库唯一约束是并发预约的最后防线<a hidden class="anchor" aria-hidden="true" href="#三数据库唯一约束是并发预约的最后防线">#</a></h2>
+<p><code>booking_slots</code> 表中有约束：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">UNIQUE</span><span class="w"> </span><span class="p">(</span><span class="n">resource_id</span><span class="p">,</span><span class="w"> </span><span class="n">slot_start</span><span class="p">)</span><span class="w">
+</span></span></span></code></pre></div><p><code>resource_id</code> 是被预约资源的 ID，例如会议室或设备；<code>slot_start</code> 是半小时时段的起始时间。两列的组合不能重复：</p>
+<table>
+	<thead>
+			<tr>
+					<th>resource_id</th>
+					<th>slot_start</th>
+					<th>结果</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>1</td>
+					<td>2026-10-23 10:00</td>
+					<td>第一次插入成功</td>
+			</tr>
+			<tr>
+					<td>1</td>
+					<td>2026-10-23 10:30</td>
+					<td>成功，这是另一个时段</td>
+			</tr>
+			<tr>
+					<td>2</td>
+					<td>2026-10-23 10:00</td>
+					<td>成功，这是另一个资源</td>
+			</tr>
+			<tr>
+					<td>1</td>
+					<td>2026-10-23 10:00</td>
+					<td>失败，组合重复</td>
+			</tr>
+	</tbody>
+</table>
+<p>查询可用时段只能说明“查询当时看起来空闲”。查询完成和真正插入之间存在时间间隔，多个请求可能同时查到空闲。因此，数据库写入时的唯一约束才是最终裁决。</p>
+<h2 id="四并发请求如何被处理">四、并发请求如何被处理<a hidden class="anchor" aria-hidden="true" href="#四并发请求如何被处理">#</a></h2>
+<p>假设 20 个请求同时预约资源 1 的 <code>10:00—10:30</code>，并且每个请求使用不同的幂等键：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">请求 A 查询：空闲
+</span></span><span class="line"><span class="cl">请求 B 查询：空闲
+</span></span><span class="line"><span class="cl">请求 C 查询：空闲
+</span></span><span class="line"><span class="cl">        ↓
+</span></span><span class="line"><span class="cl">多个事务尝试插入同一个 (resource_id, slot_start)
+</span></span><span class="line"><span class="cl">        ↓
+</span></span><span class="line"><span class="cl">数据库唯一约束裁决
+</span></span><span class="line"><span class="cl">        ↓
+</span></span><span class="line"><span class="cl">一个事务成功，其他事务失败并回滚
+</span></span></code></pre></div><p>项目的并发测试使用 20 个线程和 <code>CountDownLatch</code>，先让所有线程准备好，再同时放行。测试最终验证：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="n">assertThat</span><span class="p">(</span><span class="n">successes</span><span class="p">).</span><span class="na">hasValue</span><span class="p">(</span><span class="n">1</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">assertThat</span><span class="p">(</span><span class="n">bookings</span><span class="p">.</span><span class="na">count</span><span class="p">()).</span><span class="na">isEqualTo</span><span class="p">(</span><span class="n">1</span><span class="p">);</span><span class="w">
+</span></span></span></code></pre></div><p>这说明只有一个请求成功，而且失败请求创建的 <code>Booking</code> 也没有残留。失败请求通常返回 <code>409 Conflict</code>，表示请求与已经成功占用的时段发生冲突。</p>
+<p>这也是为什么 Redis 不能替代数据库唯一约束。Redis 可以缓存可用时段，也可以作为辅助锁减少同时进入临界区的请求，但锁可能过期、应用可能崩溃、网络可能中断。真正阻止重复占用的仍然是数据库约束。</p>
+<h2 id="五redis-锁的作用">五、Redis 锁的作用<a hidden class="anchor" aria-hidden="true" href="#五redis-锁的作用">#</a></h2>
+<p>Redis 锁是一种分布式互斥锁，用来让多个线程或多个应用实例尽量不要同时执行同一段关键代码。常见形式是：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">SET lock:resource:1:10:00 request-id NX PX 10000
+</span></span></code></pre></div><p><code>NX</code> 表示只有 key 不存在时才创建，<code>PX</code> 设置自动过期时间，<code>request-id</code> 用来确认释放锁时确实是当前请求持有的锁。</p>
+<p>Redis 锁适合减少重复计算、协调定时任务或降低数据库竞争。预约系统即使使用 Redis 锁，也必须保留 PostgreSQL 的唯一约束，因为 Redis 锁失效后不能阻止两个请求同时写入数据库。</p>
+<h2 id="六幂等键解决重复请求">六、幂等键解决重复请求<a hidden class="anchor" aria-hidden="true" href="#六幂等键解决重复请求">#</a></h2>
+<p>并发和幂等解决的是不同问题。并发关注多个请求同时争抢同一时段；幂等关注同一个请求因为超时或重试被重复发送。</p>
+<p>例如客户端第一次发送预约后没有收到响应，客户端可以使用同一个 <code>Idempotency-Key</code> 重试：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">第一次：phase2-booking-001，资源 1，10:00—10:30
+</span></span><span class="line"><span class="cl">重试：  phase2-booking-001，资源 1，10:00—10:30
+</span></span></code></pre></div><p>项目通过 <code>(user_id, idempotency_key)</code> 唯一约束限制同一个用户重复使用幂等键。Service 先按用户和幂等键查询已有预约：</p>
+<ul>
+<li>相同 key、相同资源和时间：返回原预约；</li>
+<li>相同 key、不同资源或时间：返回 <code>409 Conflict</code>；</li>
+<li>新操作使用新 key：按新的预约处理。</li>
+</ul>
+<p>所以，幂等键不是预约 ID，也不是资源 ID。它是客户端为“一次业务操作”生成的标识，同一次操作重试时复用，发起新操作时更换。</p>
+<h2 id="七三个约束分别解决什么问题">七、三个约束分别解决什么问题<a hidden class="anchor" aria-hidden="true" href="#七三个约束分别解决什么问题">#</a></h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">事务
+</span></span><span class="line"><span class="cl">  保证一笔预约的多条写入整体成功或整体回滚
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">唯一约束 (resource_id, slot_start)
+</span></span><span class="line"><span class="cl">  防止并发请求重复占用同一个资源时段
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">唯一约束 (user_id, idempotency_key)
+</span></span><span class="line"><span class="cl">  防止同一个用户重复创建同一业务请求
+</span></span></code></pre></div><p>它们不能互相替代。事务解决完整性，时段唯一约束解决资源竞争，幂等键解决网络重试。</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+<nav class="paginav">
+  <a class="next" href="https://kelp-z.github.io/posts/reserveflow%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5%E5%90%AF%E5%8A%A8%E9%85%8D%E7%BD%AE%E4%B8%8E%E8%AF%B7%E6%B1%82%E9%93%BE%E8%B7%AF/">
+    <span class="title">下一页 »</span>
+    <span>ReserveFlow 第一阶段：启动配置与请求链路</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="https://kelp-z.github.io/">Kelp&#39;s Blog</a></span> · 
+
+    
+    
+    <span>
+        Powered by
+        <a href="https://gohugo.io/?utm_source=papermod" rel="noopener" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" id="top-link" class="top-link hidden" aria-label="go to top" title="Go to Top (Alt + G)" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-up">
+        <polyline points="17 11 12 6 7 11"></polyline>
+        <polyline points="17 18 12 13 7 18"></polyline>
+    </svg>
+</a><script>
+    document.addEventListener("click", function (event) {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+        const target = event.target.closest("a, button");
+        if (!target) return;
+
+        const ripple = document.createElement("span");
+        ripple.className = "click-ripple";
+        ripple.style.left = `${event.clientX}px`;
+        ripple.style.top = `${event.clientY}px`;
+        document.body.appendChild(ripple);
+        ripple.addEventListener("animationend", () => ripple.remove(), { once: true });
+    });
+
+    const tocLinks = Array.from(document.querySelectorAll(".post-single > .toc a[href^='#']"));
+    const tocHeadings = tocLinks.map((link) => {
+        try {
+            return { link, heading: document.getElementById(decodeURIComponent(link.hash.slice(1))) };
+        } catch {
+            return { link, heading: null };
+        }
+    }).filter((item) => item.heading);
+
+    if (tocHeadings.length) {
+        let ticking = false;
+        const updateActiveTocLink = () => {
+            let active = tocHeadings[0];
+            for (const item of tocHeadings) {
+                if (item.heading.getBoundingClientRect().top <= 180) active = item;
+            }
+            tocLinks.forEach((link) => link.classList.toggle("is-active", link === active.link));
+            ticking = false;
+        };
+
+        document.addEventListener("scroll", () => {
+            if (!ticking) {
+                requestAnimationFrame(updateActiveTocLink);
+                ticking = true;
+            }
+        }, { passive: true });
+        updateActiveTocLink();
+    }
+</script>
+
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var toplink = document.getElementById("top-link");
+    window.onscroll = function () {
+        const scrollThreshold = window.innerHeight;
+        if (document.body.scrollTop > scrollThreshold || document.documentElement.scrollTop > scrollThreshold) {
+            toplink.classList.remove("hidden");
+        } else {
+            toplink.classList.add("hidden");
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

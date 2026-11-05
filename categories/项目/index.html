@@ -152,6 +152,29 @@
 
 <article class="post-entry tag-entry"> 
   <header class="entry-header">
+    <h2 class="entry-hint-parent">ReserveFlow 二
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>一、一次预约为什么要拆成多个时段 项目按 30 分钟粒度保存预约占用。用户预约 10:00—11:30 时，完整预约保存到 bookings 表，同时生成三个 booking_slots：
+10:00 10:30 11:00 bookings 保存一次预约的整体信息：用户、资源、完整起止时间、状态和幂等键。booking_slots 保存具体被占用的半小时时段，并通过 booking_id 关联到这笔预约。
+这样设计后，查询可用时段时可以直接判断某个半小时起点是否已经被占用，也可以用数据库约束阻止同一资源的同一时段被重复写入。
+二、事务保证一次预约整体成功 BookingService.create() 使用 @Transactional：
+开启事务 → 保存 Booking → 保存全部 BookingSlot → flush → 方法正常返回 → 提交事务 一次预约可能包含多条 SQL。单条 SQL 执行成功，不代表整个事务已经提交。假如预约记录和第一个时段已经写入，第二个时段发生冲突，异常会使整个事务回滚，之前写入的预约和时段也会被撤销。
+这保证了系统不会留下“预约记录存在，但只有部分时段被占用”的不完整数据。事务的核心要求是：一次业务操作中的相关写入要么全部成功，要么全部撤销。
+三、数据库唯一约束是并发预约的最后防线 booking_slots 表中有约束：
+UNIQUE (resource_id, slot_start) resource_id 是被预约资源的 ID，例如会议室或设备；slot_start 是半小时时段的起始时间。两列的组合不能重复：
+resource_id slot_start 结果 1 2026-10-23 10:00 第一次插入成功 1 2026-10-23 10:30 成功，这是另一个时段 2 2026-10-23 10:00 成功，这是另一个资源 1 2026-10-23 10:00 失败，组合重复 查询可用时段只能说明“查询当时看起来空闲”。查询完成和真正插入之间存在时间间隔，多个请求可能同时查到空闲。因此，数据库写入时的唯一约束才是最终裁决。
+...</p>
+  </div>
+  <footer class="entry-footer">
+
+<span title='2026-11-05 00:00:00 +0000 UTC'>2026年11月5日</span>&nbsp;·&nbsp;<span>1 分钟</span>&nbsp;·&nbsp;<span>Kelp</span></footer>
+  <a class="entry-link" aria-label="post link to ReserveFlow 二" href="https://kelp-z.github.io/posts/reserveflow-%E4%BA%8C/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
     <h2 class="entry-hint-parent">ReserveFlow 第一阶段：启动配置与请求链路
     </h2>
   </header>
