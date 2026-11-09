@@ -152,6 +152,25 @@
 
 <article class="post-entry tag-entry"> 
   <header class="entry-header">
+    <h2 class="entry-hint-parent">leetcode100热题 第53题
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>最大子数组和 给定一个整数数组 nums，从中选出一段连续的元素，返回这段元素的和能达到的最大值。至少要选一个元素。例如，[-2, 1, -3, 4, -1, 2, 1, -5, 4] 的答案是 6，对应 [4, -1, 2, 1]。
+要往左看几位？ 我最先卡在 [4, -1, 2]。走到 2 时，单看紧挨着的 -1，带上它会让和变小。可如果把 4 也带上，和就从 2 变成了 5。那我怎么知道该往左看几位？
+先把 2 遮住。如果以后要把左边的一段接到 2 上，连续性要求那一段必须以 -1 结尾。这里只有两种选法：
+以 -1 结尾的子数组 原来的和 接上 2 后的和 [-1] -1 1 [4, -1] 3 5 两段都加上同一个数，原来较小的和就不可能反超。 所以走到 2 时，只要知道“以上一个位置结尾的最大和是 3”，就能直接比较：单选 2 得到 2，接上左边得到 3 &#43; 2 = 5。至于这个 3 是往左取几位得到的，已经不影响这一步了。
+为什么比较 x 和 pre &#43; x？ 设当前元素为 x，更新前的 pre 表示以上一个位置结尾的最大和。我一开始想比较 pre 和 pre &#43; x。拿 [4, -1] 来试，这样会在 4 和 3 中选出 4。它对应的子数组是 [4]，结尾还停在上一个位置。
+...</p>
+  </div>
+  <footer class="entry-footer">
+
+<span title='2026-11-09 00:00:00 +0000 UTC'>2026年11月9日</span>&nbsp;·&nbsp;<span>1 分钟</span>&nbsp;·&nbsp;<span>Kelp</span></footer>
+  <a class="entry-link" aria-label="post link to leetcode100热题 第53题" href="https://kelp-z.github.io/posts/leetcode100%E7%83%AD%E9%A2%98-%E7%AC%AC53%E9%A2%98/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
     <h2 class="entry-hint-parent">滑动窗口
     </h2>
   </header>

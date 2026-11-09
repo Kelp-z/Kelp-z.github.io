@@ -159,6 +159,25 @@
 
 <article class="post-entry"> 
   <header class="entry-header">
+    <h2 class="entry-hint-parent">RestTemplate 详解
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>RestTemplate 详解 什么是 RestTemplate RestTemplate 是 Spring 框架中用于发送 HTTP 请求的核心类，它提供了一种简洁、优雅的方式来与 RESTful API 进行交互。RestTemplate 封装了底层的 HTTP 客户端实现，提供了一系列方法来发送不同类型的 HTTP 请求（如 GET、POST、PUT、DELETE 等）。
+RestTemplate 的作用和用途 1. 调用外部 API 发送 HTTP 请求到外部 API 并获取响应 支持各种 HTTP 方法（GET、POST、PUT、DELETE 等） 自动处理请求和响应的序列化与反序列化 2. 微服务间通信 在微服务架构中，不同服务之间通过 HTTP 进行通信 RestTemplate 提供了一种统一的方式来调用其他服务的 API 3. 简化 HTTP 客户端代码 封装了底层的 HTTP 客户端实现，如 Apache HttpClient、OkHttp 等 提供了简洁的 API，避免了手动处理 HTTP 请求的复杂性 4. 支持多种数据格式 支持 JSON、XML 等多种数据格式的转换 自动处理请求体和响应体的序列化与反序列化 RestTemplateConfig 的作用 在我们的项目中，RestTemplateConfig 类的作用是：
+创建并配置 RestTemplate 实例：通过 @Bean 注解将 RestTemplate 注册为 Spring 容器中的一个 Bean，使其可以被其他组件注入和使用。
+提供默认配置：虽然配置文件中只是简单地返回了一个新的 RestTemplate() 实例，但这已经包含了 Spring 的默认配置，能够处理大多数常见的 HTTP 请求场景。
+便于后续扩展：如果未来需要对 RestTemplate 进行自定义配置（如添加拦截器、设置超时时间等），可以在这个配置类中进行修改。
+...</p>
+  </div>
+  <footer class="entry-footer">
+
+<span title='2026-09-07 00:00:00 +0000 UTC'>2026年9月7日</span>&nbsp;·&nbsp;<span>1 分钟</span>&nbsp;·&nbsp;<span>Kelp</span></footer>
+  <a class="entry-link" aria-label="post link to RestTemplate 详解" href="https://kelp-z.github.io/posts/resttemplate/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
     <h2 class="entry-hint-parent">动态代理部分源码分析
     </h2>
   </header>
