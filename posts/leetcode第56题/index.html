@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto" data-theme="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>leetcode第56题 | Kelp&#39;s Blog</title>
+<meta name="keywords" content="数组">
+<meta name="description" content="合并区间：按左端点排序，逐个判断下一个区间能否继续合并。">
+<meta name="author" content="Kelp">
+<link rel="canonical" href="https://kelp-z.github.io/posts/leetcode%E7%AC%AC56%E9%A2%98/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.59be42353eb383be08f2ef1e22c24b66949e288239f6531d5833adbbbb6c8688.css" integrity="sha256-Wb5CNT6zg74I8u8eIsJLZpSeKII59lMdWDOtu7tshog=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://kelp-z.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://kelp-z.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://kelp-z.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://kelp-z.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://kelp-z.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://kelp-z.github.io/posts/leetcode%E7%AC%AC56%E9%A2%98/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script><link rel="stylesheet" href="/css/extended/custom.min.81c108bc0f646cc13dc17f8dcbc1e5237d6de6c73ce2a9f96fac8dcdcf313d44.css" integrity="sha256-gcEIvA9kbME9wX&#43;Ny8HlI31t5sc84qn5b6yNzc8xPUQ=">
+<meta property="og:url" content="https://kelp-z.github.io/posts/leetcode%E7%AC%AC56%E9%A2%98/">
+  <meta property="og:site_name" content="Kelp&#39;s Blog">
+  <meta property="og:title" content="leetcode第56题">
+  <meta property="og:description" content="合并区间：按左端点排序，逐个判断下一个区间能否继续合并。">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2026-11-11T00:00:00+00:00">
+    <meta property="article:modified_time" content="2026-11-11T00:00:00+00:00">
+    <meta property="article:tag" content="数组">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="leetcode第56题">
+  <meta name="twitter:description" content="合并区间：按左端点排序，逐个判断下一个区间能否继续合并。">
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "文章",
+      "item": "https://kelp-z.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "leetcode第56题",
+      "item": "https://kelp-z.github.io/posts/leetcode%E7%AC%AC56%E9%A2%98/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "leetcode第56题",
+  "name": "leetcode第56题",
+  "description": "合并区间：按左端点排序，逐个判断下一个区间能否继续合并。",
+  "keywords": [
+    "数组"
+  ],
+  "articleBody": "合并区间 给定若干个闭区间 [start, end]，把重叠的区间合并，使结果恰好覆盖原来的范围。两个区间共用一个端点也算重叠，例如 [1, 4] 和 [4, 5] 可以合并成 [1, 5]。\n为什么先按左端点排序？ 在数轴上从左往右看，判断两个区间能否合并很直观。假设当前区间是 [1, 4]，下一个区间从 3 开始，两段就有重叠。从 4 开始也能接上，因此判断条件里要包含等号。\n这个判断有一个前提：下一个区间的起点在当前起点的右侧，或者与它重合。输入可能先给 [8, 10]，再给 [1, 3]。直接比较会得到 1 \u003c= 10，可这两段之间明明有空隙。先按左端点从小到大排序，就可以依次比较下一个区间的左端点 start 和 当前合并区间的右端点 right。\n在 Java 的 int[][] 中，每个元素都是一个表示区间的 int[]。代码里的 Arrays.sort(intervals, (a, b) -\u003e Integer.compare(a[0], b[0])) 会比较两个区间的左端点。例如比较 [2, 9] 和 [4, 5] 时，用到的是 2 和 4，所以整个 [2, 9] 排在前面。\n合并时，右端点应该取谁？ 我最初在重叠时直接写了 right = end。用 [[1, 6], [2, 4], [5, 8]] 走一遍，就能看出问题。\n当前区间从 [1, 6] 开始。读到 [2, 4] 时，它已经完全包含在当前区间里。如果把 right 改成 4，原来覆盖到 6 的部分就丢了。 保留右端点 6 后，再读到 [5, 8]，比较的是 5 \u003c= 6。这次新区间伸得更远，右端点更新为 8，最终得到 [1, 8]。 两步用的是同一条规则：当 start \u003c= right 时，保留原来的左端点，用 Math.max(right, end) 记录这一整段最远能覆盖到哪里。\n如果接下来读到 [10, 12]，它的起点 10 已经超过 8。由于排过序，后面的起点至少也是 10，所以可以把 [1, 8] 放进结果，再从 [10, 12] 开始。循环结束时，手里还有最后一段，需要再加入结果一次。输入只有一个区间时，也由这一步保存它。\nJava 实现 class Solution { public int[][] merge(int[][] intervals) { List\u003cint[]\u003e result = new ArrayList\u003c\u003e(); Arrays.sort(intervals, (a, b) -\u003e Integer.compare(a[0], b[0])); int left = intervals[0][0]; int right = intervals[0][1]; for (int i = 1; i \u003c intervals.length; i++) { int start = intervals[i][0]; int end = intervals[i][1]; if (start \u003c= right) { right = Math.max(right, end); } else { result.add(new int[]{left, right}); left = start; right = end; } } result.add(new int[]{left, right}); return result.toArray(new int[result.size()][]); } } 设区间数量为 n。排序耗时 O(n log n)，之后只扫描一次，总时间复杂度为 O(n log n)。排序和结果列表占用的额外空间最坏为 O(n)。\n",
+  "wordCount" : "200",
+  "inLanguage": "zh",
+  "datePublished": "2026-11-11T00:00:00Z",
+  "dateModified": "2026-11-11T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "Kelp"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://kelp-z.github.io/posts/leetcode%E7%AC%AC56%E9%A2%98/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Kelp's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://kelp-z.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+<body id="top">
+    <header class="header">
+    <nav class="header-nav">
+        <div class="logo">
+            <a href="https://kelp-z.github.io/" accesskey="h" title="Kelp&#39;s Blog (Alt + H)">
+                        
+                    <img src="https://kelp-z.github.io/images/jerry-avatar_hu_c47b23cfb79a27ab.png" alt="" aria-label="logo"
+                        height="42">Kelp&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg class="sun" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu" class="menu">
+            <li>
+                <a href="https://kelp-z.github.io/posts/" title="文章">
+                    <span>文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/archive/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/about/" title="关于">
+                    <span>关于</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <nav class="breadcrumbs" role="navigation" aria-label="Breadcrumb">
+            <a href="/">主页</a>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right">
+                <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+            <a href="/posts/">文章</a>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right">
+        <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+</nav>
+    <h1 class="post-title entry-hint-parent">
+      leetcode第56题
+    </h1>
+    <div class="post-description">
+      合并区间：按左端点排序，逐个判断下一个区间能否继续合并。
+    </div>
+    <div class="post-meta">
+
+<span title='2026-11-11 00:00:00 +0000 UTC'>2026年11月11日</span>&nbsp;·&nbsp;<span>1 分钟</span>&nbsp;·&nbsp;<span>Kelp</span>
+
+</div>
+  </header> <details class="toc"  open>
+    <summary accesskey="c" title="(Alt + C)">
+        <span class="title">目录</span>
+    </summary>
+
+    <div class="inner"><ul>
+            <li>
+                <a href="#%e5%90%88%e5%b9%b6%e5%8c%ba%e9%97%b4" aria-label="合并区间">合并区间</a></li>
+            <li>
+                <a href="#%e4%b8%ba%e4%bb%80%e4%b9%88%e5%85%88%e6%8c%89%e5%b7%a6%e7%ab%af%e7%82%b9%e6%8e%92%e5%ba%8f" aria-label="为什么先按左端点排序？">为什么先按左端点排序？</a></li>
+            <li>
+                <a href="#%e5%90%88%e5%b9%b6%e6%97%b6%e5%8f%b3%e7%ab%af%e7%82%b9%e5%ba%94%e8%af%a5%e5%8f%96%e8%b0%81" aria-label="合并时，右端点应该取谁？">合并时，右端点应该取谁？</a></li>
+            <li>
+                <a href="#java-%e5%ae%9e%e7%8e%b0" aria-label="Java 实现">Java 实现</a>
+            </li>
+        </ul>
+    </div>
+</details>
+
+  <div class="post-content md-content"><h2 id="合并区间">合并区间<a hidden class="anchor" aria-hidden="true" href="#合并区间">#</a></h2>
+<p>给定若干个闭区间 <code>[start, end]</code>，把重叠的区间合并，使结果恰好覆盖原来的范围。两个区间共用一个端点也算重叠，例如 <code>[1, 4]</code> 和 <code>[4, 5]</code> 可以合并成 <code>[1, 5]</code>。</p>
+<h2 id="为什么先按左端点排序">为什么先按左端点排序？<a hidden class="anchor" aria-hidden="true" href="#为什么先按左端点排序">#</a></h2>
+<p>在数轴上从左往右看，判断两个区间能否合并很直观。假设当前区间是 <code>[1, 4]</code>，下一个区间从 <code>3</code> 开始，两段就有重叠。从 <code>4</code> 开始也能接上，因此判断条件里要包含等号。</p>
+<p>这个判断有一个前提：下一个区间的起点在当前起点的右侧，或者与它重合。输入可能先给 <code>[8, 10]</code>，再给 <code>[1, 3]</code>。直接比较会得到 <code>1 &lt;= 10</code>，可这两段之间明明有空隙。先按左端点从小到大排序，就可以依次比较<strong>下一个区间的左端点 <code>start</code></strong> 和 <strong>当前合并区间的右端点 <code>right</code></strong>。</p>
+<p>在 Java 的 <code>int[][]</code> 中，每个元素都是一个表示区间的 <code>int[]</code>。代码里的 <code>Arrays.sort(intervals, (a, b) -&gt; Integer.compare(a[0], b[0]))</code> 会比较两个区间的左端点。例如比较 <code>[2, 9]</code> 和 <code>[4, 5]</code> 时，用到的是 <code>2</code> 和 <code>4</code>，所以整个 <code>[2, 9]</code> 排在前面。</p>
+<h2 id="合并时右端点应该取谁">合并时，右端点应该取谁？<a hidden class="anchor" aria-hidden="true" href="#合并时右端点应该取谁">#</a></h2>
+<p>我最初在重叠时直接写了 <code>right = end</code>。用 <code>[[1, 6], [2, 4], [5, 8]]</code> 走一遍，就能看出问题。</p>
+<ol>
+<li>当前区间从 <code>[1, 6]</code> 开始。读到 <code>[2, 4]</code> 时，它已经完全包含在当前区间里。如果把 <code>right</code> 改成 <code>4</code>，原来覆盖到 <code>6</code> 的部分就丢了。</li>
+<li>保留右端点 <code>6</code> 后，再读到 <code>[5, 8]</code>，比较的是 <code>5 &lt;= 6</code>。这次新区间伸得更远，右端点更新为 <code>8</code>，最终得到 <code>[1, 8]</code>。</li>
+</ol>
+<p>两步用的是同一条规则：当 <code>start &lt;= right</code> 时，保留原来的左端点，用 <code>Math.max(right, end)</code> 记录这一整段最远能覆盖到哪里。</p>
+<p>如果接下来读到 <code>[10, 12]</code>，它的起点 <code>10</code> 已经超过 <code>8</code>。由于排过序，后面的起点至少也是 <code>10</code>，所以可以把 <code>[1, 8]</code> 放进结果，再从 <code>[10, 12]</code> 开始。循环结束时，手里还有最后一段，需要再加入结果一次。输入只有一个区间时，也由这一步保存它。</p>
+<h2 id="java-实现">Java 实现<a hidden class="anchor" aria-hidden="true" href="#java-实现">#</a></h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">class</span> <span class="nc">Solution</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">int</span><span class="o">[][]</span><span class="w"> </span><span class="nf">merge</span><span class="p">(</span><span class="kt">int</span><span class="o">[][]</span><span class="w"> </span><span class="n">intervals</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">List</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">[]&gt;</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">Arrays</span><span class="p">.</span><span class="na">sort</span><span class="p">(</span><span class="n">intervals</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Integer</span><span class="p">.</span><span class="na">compare</span><span class="p">(</span><span class="n">a</span><span class="o">[</span><span class="n">0</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="o">[</span><span class="n">0</span><span class="o">]</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">intervals</span><span class="o">[</span><span class="n">0</span><span class="o">][</span><span class="n">0</span><span class="o">]</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">intervals</span><span class="o">[</span><span class="n">0</span><span class="o">][</span><span class="n">1</span><span class="o">]</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">1</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">intervals</span><span class="p">.</span><span class="na">length</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="kt">int</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">intervals</span><span class="o">[</span><span class="n">i</span><span class="o">][</span><span class="n">0</span><span class="o">]</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="kt">int</span><span class="w"> </span><span class="n">end</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">intervals</span><span class="o">[</span><span class="n">i</span><span class="o">][</span><span class="n">1</span><span class="o">]</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">start</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">right</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Math</span><span class="p">.</span><span class="na">max</span><span class="p">(</span><span class="n">right</span><span class="p">,</span><span class="w"> </span><span class="n">end</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">result</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[]</span><span class="p">{</span><span class="n">left</span><span class="p">,</span><span class="w"> </span><span class="n">right</span><span class="p">});</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">start</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">end</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">result</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[]</span><span class="p">{</span><span class="n">left</span><span class="p">,</span><span class="w"> </span><span class="n">right</span><span class="p">});</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">result</span><span class="p">.</span><span class="na">toArray</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[</span><span class="n">result</span><span class="p">.</span><span class="na">size</span><span class="p">()</span><span class="o">][]</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><p>设区间数量为 <code>n</code>。排序耗时 <code>O(n log n)</code>，之后只扫描一次，总时间复杂度为 <code>O(n log n)</code>。排序和结果列表占用的额外空间最坏为 <code>O(n)</code>。</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://kelp-z.github.io/tags/%E6%95%B0%E7%BB%84/">数组</a></li>
+    </ul>
+<nav class="paginav">
+  <a class="next" href="https://kelp-z.github.io/posts/leetcode100%E7%83%AD%E9%A2%98-%E7%AC%AC53%E9%A2%98/">
+    <span class="title">下一页 »</span>
+    <span>leetcode100热题 第53题</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="https://kelp-z.github.io/">Kelp&#39;s Blog</a></span> · 
+
+    
+    
+    <span>
+        Powered by
+        <a href="https://gohugo.io/?utm_source=papermod" rel="noopener" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" id="top-link" class="top-link hidden" aria-label="go to top" title="Go to Top (Alt + G)" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-up">
+        <polyline points="17 11 12 6 7 11"></polyline>
+        <polyline points="17 18 12 13 7 18"></polyline>
+    </svg>
+</a><script>
+    document.addEventListener("click", function (event) {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+        const target = event.target.closest("a, button");
+        if (!target) return;
+
+        const ripple = document.createElement("span");
+        ripple.className = "click-ripple";
+        ripple.style.left = `${event.clientX}px`;
+        ripple.style.top = `${event.clientY}px`;
+        document.body.appendChild(ripple);
+        ripple.addEventListener("animationend", () => ripple.remove(), { once: true });
+    });
+
+    const tocLinks = Array.from(document.querySelectorAll(".post-single > .toc a[href^='#']"));
+    const tocHeadings = tocLinks.map((link) => {
+        try {
+            return { link, heading: document.getElementById(decodeURIComponent(link.hash.slice(1))) };
+        } catch {
+            return { link, heading: null };
+        }
+    }).filter((item) => item.heading);
+
+    if (tocHeadings.length) {
+        let ticking = false;
+        const updateActiveTocLink = () => {
+            let active = tocHeadings[0];
+            for (const item of tocHeadings) {
+                if (item.heading.getBoundingClientRect().top <= 180) active = item;
+            }
+            tocLinks.forEach((link) => link.classList.toggle("is-active", link === active.link));
+            ticking = false;
+        };
+
+        document.addEventListener("scroll", () => {
+            if (!ticking) {
+                requestAnimationFrame(updateActiveTocLink);
+                ticking = true;
+            }
+        }, { passive: true });
+        updateActiveTocLink();
+    }
+</script>
+
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var toplink = document.getElementById("top-link");
+    window.onscroll = function () {
+        const scrollThreshold = window.innerHeight;
+        if (document.body.scrollTop > scrollThreshold || document.documentElement.scrollTop > scrollThreshold) {
+            toplink.classList.remove("hidden");
+        } else {
+            toplink.classList.add("hidden");
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

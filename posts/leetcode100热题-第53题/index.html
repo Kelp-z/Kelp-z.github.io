@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <meta name="robots" content="index, follow">
 <title>leetcode100热题 第53题 | Kelp&#39;s Blog</title>
-<meta name="keywords" content="动态规划">
+<meta name="keywords" content="数组">
 <meta name="description" content="最大子数组和：从“要往左看几位”推导出以当前位置结尾的最大和。">
 <meta name="author" content="Kelp">
 <link rel="canonical" href="https://kelp-z.github.io/posts/leetcode100%E7%83%AD%E9%A2%98-%E7%AC%AC53%E9%A2%98/">
@@ -74,7 +74,7 @@
     <meta property="article:section" content="posts">
     <meta property="article:published_time" content="2026-11-09T00:00:00+00:00">
     <meta property="article:modified_time" content="2026-11-09T00:00:00+00:00">
-    <meta property="article:tag" content="动态规划">
+    <meta property="article:tag" content="数组">
 
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="leetcode100热题 第53题">
@@ -109,7 +109,7 @@
   "name": "leetcode100热题 第53题",
   "description": "最大子数组和：从“要往左看几位”推导出以当前位置结尾的最大和。",
   "keywords": [
-    "动态规划"
+    "数组"
   ],
   "articleBody": "最大子数组和 给定一个整数数组 nums，从中选出一段连续的元素，返回这段元素的和能达到的最大值。至少要选一个元素。例如，[-2, 1, -3, 4, -1, 2, 1, -5, 4] 的答案是 6，对应 [4, -1, 2, 1]。\n要往左看几位？ 我最先卡在 [4, -1, 2]。走到 2 时，单看紧挨着的 -1，带上它会让和变小。可如果把 4 也带上，和就从 2 变成了 5。那我怎么知道该往左看几位？\n先把 2 遮住。如果以后要把左边的一段接到 2 上，连续性要求那一段必须以 -1 结尾。这里只有两种选法：\n以 -1 结尾的子数组 原来的和 接上 2 后的和 [-1] -1 1 [4, -1] 3 5 两段都加上同一个数，原来较小的和就不可能反超。 所以走到 2 时，只要知道“以上一个位置结尾的最大和是 3”，就能直接比较：单选 2 得到 2，接上左边得到 3 + 2 = 5。至于这个 3 是往左取几位得到的，已经不影响这一步了。\n为什么比较 x 和 pre + x？ 设当前元素为 x，更新前的 pre 表示以上一个位置结尾的最大和。我一开始想比较 pre 和 pre + x。拿 [4, -1] 来试，这样会在 4 和 3 中选出 4。它对应的子数组是 [4]，结尾还停在上一个位置。\n这一轮要求的是以当前的 x 结尾的最大和。既然一定选 x，就只有两种可能：从 x 重新开始，或者把 x 接到左边。因此更新式是 pre = Math.max(x, pre + x)。\n整个数组的最优解可以在任何位置结束，所以还需要用 best 记录到目前为止见过的最大和。比如读完 [4, -1]，pre = 3，对应 [4, -1]；best = 4，对应 [4]。下一轮用 pre 接新元素，遍历结束时返回 best。\nJava 实现 第一个元素本身就是一段合法的子数组，因此 pre 和 best 都初始化为 nums[0]，从下标 1 开始遍历。这样即使数组全是负数，例如 [-3, -2]，得到的也是合法答案 -2。\nclass Solution { public int maxSubArray(int[] nums) { int pre = nums[0]; int best = nums[0]; for (int i = 1; i \u003c nums.length; i++) { int x = nums[i]; pre = Math.max(x, pre + x); best = Math.max(pre, best); } return best; } } 数组只遍历一次，时间复杂度为 O(n)，额外空间复杂度为 O(1)。\n",
   "wordCount" : "180",
@@ -288,9 +288,13 @@
 
   <footer class="post-footer">
     <ul class="post-tags">
-      <li><a href="https://kelp-z.github.io/tags/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/">动态规划</a></li>
+      <li><a href="https://kelp-z.github.io/tags/%E6%95%B0%E7%BB%84/">数组</a></li>
     </ul>
 <nav class="paginav">
+  <a class="prev" href="https://kelp-z.github.io/posts/leetcode%E7%AC%AC56%E9%A2%98/">
+    <span class="title">« 上一页</span>
+    <span>leetcode第56题</span>
+  </a>
   <a class="next" href="https://kelp-z.github.io/posts/reserveflow-%E4%BA%8C/">
     <span class="title">下一页 »</span>
     <span>ReserveFlow 二</span>
