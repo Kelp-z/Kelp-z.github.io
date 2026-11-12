@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh" dir="auto" data-theme="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>ReserveFlow三 | Kelp&#39;s Blog</title>
+<meta name="keywords" content="">
+<meta name="description" content="从两次可用时段查询的断点记录，理解 Spring 如何读写缓存、处理 Redis 异常，以及在预约事务提交后删除旧结果。">
+<meta name="author" content="Kelp">
+<link rel="canonical" href="https://kelp-z.github.io/posts/reserveflow%E4%B8%89/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.59be42353eb383be08f2ef1e22c24b66949e288239f6531d5833adbbbb6c8688.css" integrity="sha256-Wb5CNT6zg74I8u8eIsJLZpSeKII59lMdWDOtu7tshog=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://kelp-z.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://kelp-z.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://kelp-z.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://kelp-z.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://kelp-z.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="zh" href="https://kelp-z.github.io/posts/reserveflow%E4%B8%89/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script><link rel="stylesheet" href="/css/extended/custom.min.81c108bc0f646cc13dc17f8dcbc1e5237d6de6c73ce2a9f96fac8dcdcf313d44.css" integrity="sha256-gcEIvA9kbME9wX&#43;Ny8HlI31t5sc84qn5b6yNzc8xPUQ=">
+<meta property="og:url" content="https://kelp-z.github.io/posts/reserveflow%E4%B8%89/">
+  <meta property="og:site_name" content="Kelp&#39;s Blog">
+  <meta property="og:title" content="ReserveFlow三">
+  <meta property="og:description" content="从两次可用时段查询的断点记录，理解 Spring 如何读写缓存、处理 Redis 异常，以及在预约事务提交后删除旧结果。">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2026-11-12T00:00:00+00:00">
+    <meta property="article:modified_time" content="2026-11-12T00:00:00+00:00">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="ReserveFlow三">
+  <meta name="twitter:description" content="从两次可用时段查询的断点记录，理解 Spring 如何读写缓存、处理 Redis 异常，以及在预约事务提交后删除旧结果。">
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "文章",
+      "item": "https://kelp-z.github.io/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "ReserveFlow三",
+      "item": "https://kelp-z.github.io/posts/reserveflow%E4%B8%89/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "ReserveFlow三",
+  "name": "ReserveFlow三",
+  "description": "从两次可用时段查询的断点记录，理解 Spring 如何读写缓存、处理 Redis 异常，以及在预约事务提交后删除旧结果。",
+  "keywords": [
+    
+  ],
+  "articleBody": "连续两次查询 1 号会议室同一天的可用时段，Controller 两次都收到了请求，Service 里的查库代码却只执行了一次。理解这次调试，要从 Controller 里的这一行开始：\nreturn availability.availability(id, date); 一、同一个请求，为什么第二次跳过了 Service 方法体 在 IDEA 的变量窗口里，Controller 持有的 availability 显示为 AvailabilityService$$SpringCGLIB$$0。这是 Spring 为 Service 创建的代理对象。Controller 调用它时，Spring 会先处理方法上的缓存注解：\n@Cacheable(cacheNames = \"availability\", key = \"#resourceId + ':' + #date\") @Transactional(readOnly = true) public AvailabilityView availability(Long resourceId, LocalDate date) cacheNames 指定缓存名，key 指定如何根据方法参数生成键。例如资源为 1、日期为 2026-11-10，得到的键就是 1:2026-11-10。同一资源换一天查询，会用到另一个键。\n我用 local 配置启动项目，在 Controller 调用 Service 的那一行和 Service 方法体的第一句 resources.existsById(resourceId) 分别设置断点，连续请求同一地址：\ncurl.exe \"http://localhost:8080/api/resources/1/availability?date=2026-11-10\" 请求 Controller 断点 Service 方法体断点 第一次 停住 停住，开始查询数据库 再次查询相同资源和日期 停住 按 F9 后直接返回结果 第一次查询时，缓存里还没有这个键。Spring 继续执行 availability() 方法体：先确认资源存在，再查当天的开放时间和已占用时段，从每半小时一个的候选列表里排除已过去、已被占用的时段。方法最后返回一个 AvailabilityView。查询数据库和计算列表由 Service 完成，读取缓存、把返回值写入缓存由 Spring 代理负责。\n第二次请求仍会执行 Controller 里的同一行。代理按相同的键取到了上次的返回值，直接交回 Controller，因此 Service 方法体的断点没有再次触发。\n二、Redis 怎样接入，键和值从哪里来 ReserveFlow 引入了 spring-boot-starter-data-redis，在启动类上用 @EnableCaching 开启注解缓存。默认配置把缓存类型设为 redis，连接地址默认为 localhost:6379，可通过 REDIS_HOST、REDIS_PORT 覆盖。Redis 缓存项的过期时间配置为 5 分钟。\n学 Redis 命令时，执行 SET name \"张三\" 就写入了一个键和值，无需先声明变量。项目中的对应关系是：\n内容 本次查询的例子 缓存名 availability 根据参数生成的键 1:2026-11-10 默认前缀规则下的 Redis 键 availability::1:2026-11-10 值 方法返回的 AvailabilityView，包含资源、日期、时区和可用时段列表，写入 Redis 时需要序列化 本机 Redis 当时能对 PING 返回 PONG，说明服务可以连接。上面的断点实验使用了另一套配置：application-local.yml 选择 H2 和 spring.cache.type: simple，结果保存在应用进程内，重启后就会清空。实验观察到的是 Spring 的缓存命中行为，5 分钟的过期时间属于默认 Redis 配置。\n三、Handler 是谁调用的 Handler 是处理器。在这个项目里，CacheErrorHandler 是一个 Java 接口，约定缓存操作抛出异常时可以调用哪些方法。以查询 1 号会议室为例，缓存里没有当天的记录是正常的未命中，Spring 会继续查库。只有读取操作抛出异常，才会调用 handleCacheGetError(...)。\n一个对象怎样成为 Spring 使用的错误处理器 最初的配置写了一个带 @Bean 的 cacheErrorHandler() 方法。Spring 容器因此管理了一个处理器对象，但注解缓存还有自己的配置入口：它从实现了 CachingConfigurer 的配置类取得 errorHandler()。我把 CacheConfig 接入了这个入口。下面摘出读取异常这一支：\n@Configuration public class CacheConfig implements CachingConfigurer { @Bean @Override public CacheErrorHandler errorHandler() { return new CacheErrorHandler() { public void handleCacheGetError(RuntimeException exception, Cache cache, Object key) { warn(\"get\", exception, cache, key); } // 省略写入、删除、清空的处理方法及记录日志的 warn 方法 }; } } 读这段代码时，我最容易混淆的是两个相似的方法名。外层的 errorHandler() 返回对象。new CacheErrorHandler() { ... } 创建的是匿名实现类的实例，@Bean 将这个实例交给已有的 Spring 容器管理。实现 CachingConfigurer 让缓存拦截器能取得这个实例，@Override 让编译器检查方法签名。内层的 handleCacheGetError(...) 才是对象处理读异常时执行的方法。\n从 Controller 的一行调用追到 catch Spring Framework 6.2.11 处理这个同步查询时，主要经过以下方法：\n方法 这一步做什么 CacheInterceptor.invoke() → CacheAspectSupport.execute() 代理接到 Controller 对 availability() 的调用，先检查缓存 findCachedValue() → findInCaches() 生成键，在名为 availability 的缓存中查找 AbstractCacheInvoker.doGet() 调用 cache.get(key)，捕获这次读取抛出的异常 在 doGet() 里可以直接看到谁调用了自己的处理方法：\ntry { return cache.get(key); } catch (RuntimeException ex) { getErrorHandler().handleCacheGetError(ex, cache, key); return null; } getErrorHandler() 取得配置好的对象。Spring 把刚捕获的异常、正在访问的缓存和本次查询的键传给它。默认处理器会重新抛出异常，程序走不到下一行。项目的处理器只记录警告，方法正常结束，执行就回到 catch 中的 return null。这个 null 表示缓存没有给出结果，拦截器接下来调用 AvailabilityService.availability() 查数据库。查库成功后，如果回写缓存也失败，handleCachePutError(...) 记录警告，调用者仍能拿到已经算出的列表。这条故障路径按源码梳理，本次断点实验观察到的是正常的未命中和命中。\n四、监听器怎样收到预约事件 创建事件与发布事件是两次调用 假设用户取消明天 10:00 的预约。BookingService.cancel() 在事务里执行这几行：\nslots.deleteByBookingId(booking.getId()); booking.cancel(); events.publishEvent(eventFor(booking, \"CANCELLED\")); 前两行释放时段、修改预约状态。最后一行按 Java 的求值顺序可以拆开读：\nBookingChangedEvent event = eventFor(booking, \"CANCELLED\"); events.publishEvent(event); 第一行调用项目自己的 eventFor(...)，创建一个普通的 BookingChangedEvent 对象。它保存资源 ID、日期、预约起止时间及 \"CANCELLED\" 等数据。假如程序停在两行之间，对象已经存在，Spring 还没收到这次事件。\n第二行把对象交给 Spring。events 是通过构造器注入的事件发布器，变量类型是 Spring 的接口 ApplicationEventPublisher。在 IDE 里点进接口，只能看到方法约定；运行时 Java 会调用注入对象的实际实现。publishEvent(...) 返回 void，说明调用方不用接收返回值。这行代码产生的效果是发布事件。如果省掉它，单靠创建对象不会触发本次缓存删除。\nSpring 怎么找到监听方法，又在何时调用它 BookingEventListeners 标有 @Component。Spring 在启动时发现其中带监听注解的方法，负责删除缓存的是这一段：\n@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT) public void evictAvailability(BookingChangedEvent event) { Cache cache = cacheManager.getCache(\"availability\"); if (cache != null) cache.evict(event.resourceId() + \":\" + event.date()); } 这里的参数类型回答“接收什么”。发布的对象是 BookingChangedEvent，与方法参数匹配。即使把方法名从 evictAvailability 改成 clearCache，保留注解和参数类型，它仍然能收到同一种事件。注解里的阶段回答“什么时候执行”。沿着这笔取消操作，可以看清三个时刻：\n事务内发布事件。 Spring 找到匹配的监听方法，为当前事务登记一次提交后的调用。此时旧缓存仍在。 数据库成功提交。 Spring 将事件作为参数传入 evictAvailability(event)，方法体里的 cache.evict(...) 删除该资源当天的缓存。若事务回滚，这个提交后监听方法不会运行。 下一次查询。 代理按同一个键查询，缓存未命中，Service 重新计算列表。已经释放的 10:00 时段会重新出现在结果中。 创建预约走相同的发布路径，只是调用了 eventFor(booking, \"CONFIRMED\")。\"CONFIRMED\" 和 \"CANCELLED\" 都是同一种事件对象的 action 字段值。创建成功会让旧列表多显示一个已占用时段，取消成功会让旧列表少显示一个已释放时段。两种情况都只需用资源 ID 和日期删除同一个键，因此可以共用监听方法。另一个接收相同事件的 notifyUser() 同样等到提交后触发，并通过 @Async 异步处理通知。\n五、为什么等事务提交后再删 假如把删缓存放在提交之前，两个请求就可能这样交错：\nA 正在预约 10:00，已经写入时段并删除缓存，事务尚未提交。 B 此时查询，因为没有缓存而访问数据库。B 还看不见 A 未提交的占用记录，于是把“10:00 可用”重新写入缓存。 A 提交成功。数据库里的 10:00 已被占用，缓存却保留着 B 刚写入的旧列表。 AFTER_COMMIT 避免了这种因提前删除而产生的时序问题，但数据库提交和缓存删除仍是两个操作。若数据库已经提交，而对应缓存删除失败，下一次查询命中旧值时会出现两种结果：\n已提交的操作 旧缓存显示 数据库中的实际状态 预约 10:00 成功 10:00 仍可选 已被占用，再次预约会因时段唯一约束冲突而返回 HTTP 409 取消 10:00 成功 列表里仍看不到 10:00 时段已释放，重新查库时会出现在可用列表里 这里还有一个调用方式上的区别。查询上的 @Cacheable 经过 Spring 缓存拦截器，能调用第三节的错误处理器。监听方法里则直接执行 cache.evict(...)，这行代码不会自动经过该处理器。默认 Redis 配置的过期时间可以限制旧缓存的存留时间，写入预约时真正阻止重复占用的是数据库的 UNIQUE (resource_id, slot_start)。上述预约、取消后的缓存变化是按代码时序推演的，本次断点实际观察的是第一节的连续查询。\n",
+  "wordCount" : "427",
+  "inLanguage": "zh",
+  "datePublished": "2026-11-12T00:00:00Z",
+  "dateModified": "2026-11-12T00:00:00Z",
+  "author":{
+    "@type": "Person",
+    "name": "Kelp"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://kelp-z.github.io/posts/reserveflow%E4%B8%89/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Kelp's Blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://kelp-z.github.io/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+<body id="top">
+    <header class="header">
+    <nav class="header-nav">
+        <div class="logo">
+            <a href="https://kelp-z.github.io/" accesskey="h" title="Kelp&#39;s Blog (Alt + H)">
+                        
+                    <img src="https://kelp-z.github.io/images/jerry-avatar_hu_c47b23cfb79a27ab.png" alt="" aria-label="logo"
+                        height="42">Kelp&#39;s Blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg class="sun" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu" class="menu">
+            <li>
+                <a href="https://kelp-z.github.io/posts/" title="文章">
+                    <span>文章</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/tags/" title="标签">
+                    <span>标签</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/archive/" title="归档">
+                    <span>归档</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://kelp-z.github.io/about/" title="关于">
+                    <span>关于</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <nav class="breadcrumbs" role="navigation" aria-label="Breadcrumb">
+            <a href="/">主页</a>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right">
+                <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+            <a href="/posts/">文章</a>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right">
+        <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+</nav>
+    <h1 class="post-title entry-hint-parent">
+      ReserveFlow三
+    </h1>
+    <div class="post-description">
+      从两次可用时段查询的断点记录，理解 Spring 如何读写缓存、处理 Redis 异常，以及在预约事务提交后删除旧结果。
+    </div>
+    <div class="post-meta">
+
+<span title='2026-11-12 00:00:00 +0000 UTC'>2026年11月12日</span>&nbsp;·&nbsp;<span>3 分钟</span>&nbsp;·&nbsp;<span>Kelp</span>
+
+</div>
+  </header> <details class="toc"  open>
+    <summary accesskey="c" title="(Alt + C)">
+        <span class="title">目录</span>
+    </summary>
+
+    <div class="inner"><ul>
+            <li>
+                <a href="#%e4%b8%80%e5%90%8c%e4%b8%80%e4%b8%aa%e8%af%b7%e6%b1%82%e4%b8%ba%e4%bb%80%e4%b9%88%e7%ac%ac%e4%ba%8c%e6%ac%a1%e8%b7%b3%e8%bf%87%e4%ba%86-service-%e6%96%b9%e6%b3%95%e4%bd%93" aria-label="一、同一个请求，为什么第二次跳过了 Service 方法体">一、同一个请求，为什么第二次跳过了 Service 方法体</a></li>
+            <li>
+                <a href="#%e4%ba%8credis-%e6%80%8e%e6%a0%b7%e6%8e%a5%e5%85%a5%e9%94%ae%e5%92%8c%e5%80%bc%e4%bb%8e%e5%93%aa%e9%87%8c%e6%9d%a5" aria-label="二、Redis 怎样接入，键和值从哪里来">二、Redis 怎样接入，键和值从哪里来</a></li>
+            <li>
+                <a href="#%e4%b8%89handler-%e6%98%af%e8%b0%81%e8%b0%83%e7%94%a8%e7%9a%84" aria-label="三、Handler 是谁调用的">三、Handler 是谁调用的</a><ul>
+                    
+            <li>
+                <a href="#%e4%b8%80%e4%b8%aa%e5%af%b9%e8%b1%a1%e6%80%8e%e6%a0%b7%e6%88%90%e4%b8%ba-spring-%e4%bd%bf%e7%94%a8%e7%9a%84%e9%94%99%e8%af%af%e5%a4%84%e7%90%86%e5%99%a8" aria-label="一个对象怎样成为 Spring 使用的错误处理器">一个对象怎样成为 Spring 使用的错误处理器</a></li>
+            <li>
+                <a href="#%e4%bb%8e-controller-%e7%9a%84%e4%b8%80%e8%a1%8c%e8%b0%83%e7%94%a8%e8%bf%bd%e5%88%b0-catch" aria-label="从 Controller 的一行调用追到 catch">从 Controller 的一行调用追到 catch</a></li></ul>
+            </li>
+            <li>
+                <a href="#%e5%9b%9b%e7%9b%91%e5%90%ac%e5%99%a8%e6%80%8e%e6%a0%b7%e6%94%b6%e5%88%b0%e9%a2%84%e7%ba%a6%e4%ba%8b%e4%bb%b6" aria-label="四、监听器怎样收到预约事件">四、监听器怎样收到预约事件</a><ul>
+                    
+            <li>
+                <a href="#%e5%88%9b%e5%bb%ba%e4%ba%8b%e4%bb%b6%e4%b8%8e%e5%8f%91%e5%b8%83%e4%ba%8b%e4%bb%b6%e6%98%af%e4%b8%a4%e6%ac%a1%e8%b0%83%e7%94%a8" aria-label="创建事件与发布事件是两次调用">创建事件与发布事件是两次调用</a></li>
+            <li>
+                <a href="#spring-%e6%80%8e%e4%b9%88%e6%89%be%e5%88%b0%e7%9b%91%e5%90%ac%e6%96%b9%e6%b3%95%e5%8f%88%e5%9c%a8%e4%bd%95%e6%97%b6%e8%b0%83%e7%94%a8%e5%ae%83" aria-label="Spring 怎么找到监听方法，又在何时调用它">Spring 怎么找到监听方法，又在何时调用它</a></li></ul>
+            </li>
+            <li>
+                <a href="#%e4%ba%94%e4%b8%ba%e4%bb%80%e4%b9%88%e7%ad%89%e4%ba%8b%e5%8a%a1%e6%8f%90%e4%ba%a4%e5%90%8e%e5%86%8d%e5%88%a0" aria-label="五、为什么等事务提交后再删">五、为什么等事务提交后再删</a>
+            </li>
+        </ul>
+    </div>
+</details>
+
+  <div class="post-content md-content"><p>连续两次查询 1 号会议室同一天的可用时段，Controller 两次都收到了请求，Service 里的查库代码却只执行了一次。理解这次调试，要从 Controller 里的这一行开始：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="k">return</span><span class="w"> </span><span class="n">availability</span><span class="p">.</span><span class="na">availability</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">date</span><span class="p">);</span><span class="w">
+</span></span></span></code></pre></div><h2 id="一同一个请求为什么第二次跳过了-service-方法体">一、同一个请求，为什么第二次跳过了 Service 方法体<a hidden class="anchor" aria-hidden="true" href="#一同一个请求为什么第二次跳过了-service-方法体">#</a></h2>
+<p>在 IDEA 的变量窗口里，Controller 持有的 <code>availability</code> 显示为 <code>AvailabilityService$$SpringCGLIB$$0</code>。这是 Spring 为 Service 创建的代理对象。Controller 调用它时，Spring 会先处理方法上的缓存注解：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="nd">@Cacheable</span><span class="p">(</span><span class="n">cacheNames</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;availability&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#34;#resourceId + &#39;:&#39; + #date&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nd">@Transactional</span><span class="p">(</span><span class="n">readOnly</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="n">AvailabilityView</span><span class="w"> </span><span class="nf">availability</span><span class="p">(</span><span class="n">Long</span><span class="w"> </span><span class="n">resourceId</span><span class="p">,</span><span class="w"> </span><span class="n">LocalDate</span><span class="w"> </span><span class="n">date</span><span class="p">)</span><span class="w">
+</span></span></span></code></pre></div><p><code>cacheNames</code> 指定缓存名，<code>key</code> 指定如何根据方法参数生成键。例如资源为 <code>1</code>、日期为 <code>2026-11-10</code>，得到的键就是 <code>1:2026-11-10</code>。同一资源换一天查询，会用到另一个键。</p>
+<p>我用 <code>local</code> 配置启动项目，在 Controller 调用 Service 的那一行和 Service 方法体的第一句 <code>resources.existsById(resourceId)</code> 分别设置断点，连续请求同一地址：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-powershell" data-lang="powershell"><span class="line"><span class="cl"><span class="n">curl</span><span class="p">.</span><span class="py">exe</span> <span class="s2">&#34;http://localhost:8080/api/resources/1/availability?date=2026-11-10&#34;</span>
+</span></span></code></pre></div><table>
+	<thead>
+			<tr>
+					<th>请求</th>
+					<th>Controller 断点</th>
+					<th>Service 方法体断点</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>第一次</td>
+					<td>停住</td>
+					<td>停住，开始查询数据库</td>
+			</tr>
+			<tr>
+					<td>再次查询相同资源和日期</td>
+					<td>停住</td>
+					<td>按 F9 后直接返回结果</td>
+			</tr>
+	</tbody>
+</table>
+<p>第一次查询时，缓存里还没有这个键。Spring 继续执行 <code>availability()</code> 方法体：先确认资源存在，再查当天的开放时间和已占用时段，从每半小时一个的候选列表里排除已过去、已被占用的时段。方法最后返回一个 <code>AvailabilityView</code>。<strong>查询数据库和计算列表由 Service 完成，读取缓存、把返回值写入缓存由 Spring 代理负责。</strong></p>
+<p>第二次请求仍会执行 Controller 里的同一行。代理按相同的键取到了上次的返回值，直接交回 Controller，因此 Service 方法体的断点没有再次触发。</p>
+<h2 id="二redis-怎样接入键和值从哪里来">二、Redis 怎样接入，键和值从哪里来<a hidden class="anchor" aria-hidden="true" href="#二redis-怎样接入键和值从哪里来">#</a></h2>
+<p>ReserveFlow 引入了 <code>spring-boot-starter-data-redis</code>，在启动类上用 <code>@EnableCaching</code> 开启注解缓存。默认配置把缓存类型设为 <code>redis</code>，连接地址默认为 <code>localhost:6379</code>，可通过 <code>REDIS_HOST</code>、<code>REDIS_PORT</code> 覆盖。Redis 缓存项的过期时间配置为 5 分钟。</p>
+<p>学 Redis 命令时，执行 <code>SET name &quot;张三&quot;</code> 就写入了一个键和值，无需先声明变量。项目中的对应关系是：</p>
+<table>
+	<thead>
+			<tr>
+					<th>内容</th>
+					<th>本次查询的例子</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>缓存名</td>
+					<td><code>availability</code></td>
+			</tr>
+			<tr>
+					<td>根据参数生成的键</td>
+					<td><code>1:2026-11-10</code></td>
+			</tr>
+			<tr>
+					<td>默认前缀规则下的 Redis 键</td>
+					<td><code>availability::1:2026-11-10</code></td>
+			</tr>
+			<tr>
+					<td>值</td>
+					<td>方法返回的 <code>AvailabilityView</code>，包含资源、日期、时区和可用时段列表，写入 Redis 时需要序列化</td>
+			</tr>
+	</tbody>
+</table>
+<p>本机 Redis 当时能对 <code>PING</code> 返回 <code>PONG</code>，说明服务可以连接。上面的断点实验使用了另一套配置：<code>application-local.yml</code> 选择 H2 和 <code>spring.cache.type: simple</code>，结果保存在应用进程内，重启后就会清空。实验观察到的是 Spring 的缓存命中行为，5 分钟的过期时间属于默认 Redis 配置。</p>
+<h2 id="三handler-是谁调用的">三、Handler 是谁调用的<a hidden class="anchor" aria-hidden="true" href="#三handler-是谁调用的">#</a></h2>
+<p>Handler 是处理器。在这个项目里，<code>CacheErrorHandler</code> 是一个 Java 接口，约定缓存操作抛出异常时可以调用哪些方法。以查询 1 号会议室为例，缓存里没有当天的记录是正常的未命中，Spring 会继续查库。只有读取操作抛出异常，才会调用 <code>handleCacheGetError(...)</code>。</p>
+<h3 id="一个对象怎样成为-spring-使用的错误处理器">一个对象怎样成为 Spring 使用的错误处理器<a hidden class="anchor" aria-hidden="true" href="#一个对象怎样成为-spring-使用的错误处理器">#</a></h3>
+<p>最初的配置写了一个带 <code>@Bean</code> 的 <code>cacheErrorHandler()</code> 方法。Spring 容器因此管理了一个处理器对象，但注解缓存还有自己的配置入口：它从实现了 <code>CachingConfigurer</code> 的配置类取得 <code>errorHandler()</code>。我把 <code>CacheConfig</code> 接入了这个入口。下面摘出读取异常这一支：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="nd">@Configuration</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">CacheConfig</span><span class="w"> </span><span class="kd">implements</span><span class="w"> </span><span class="n">CachingConfigurer</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Bean</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nd">@Override</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">CacheErrorHandler</span><span class="w"> </span><span class="nf">errorHandler</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">CacheErrorHandler</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">handleCacheGetError</span><span class="p">(</span><span class="n">RuntimeException</span><span class="w"> </span><span class="n">exception</span><span class="p">,</span><span class="w"> </span><span class="n">Cache</span><span class="w"> </span><span class="n">cache</span><span class="p">,</span><span class="w"> </span><span class="n">Object</span><span class="w"> </span><span class="n">key</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">warn</span><span class="p">(</span><span class="s">&#34;get&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">exception</span><span class="p">,</span><span class="w"> </span><span class="n">cache</span><span class="p">,</span><span class="w"> </span><span class="n">key</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// 省略写入、删除、清空的处理方法及记录日志的 warn 方法</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">};</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><p>读这段代码时，我最容易混淆的是两个相似的方法名。外层的 <code>errorHandler()</code> <strong>返回对象</strong>。<code>new CacheErrorHandler() { ... }</code> 创建的是匿名实现类的实例，<code>@Bean</code> 将这个实例交给已有的 Spring 容器管理。实现 <code>CachingConfigurer</code> 让缓存拦截器能取得这个实例，<code>@Override</code> 让编译器检查方法签名。内层的 <code>handleCacheGetError(...)</code> 才是对象<strong>处理读异常时执行的方法</strong>。</p>
+<h3 id="从-controller-的一行调用追到-catch">从 Controller 的一行调用追到 catch<a hidden class="anchor" aria-hidden="true" href="#从-controller-的一行调用追到-catch">#</a></h3>
+<p>Spring Framework 6.2.11 处理这个同步查询时，主要经过以下方法：</p>
+<table>
+	<thead>
+			<tr>
+					<th>方法</th>
+					<th>这一步做什么</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><code>CacheInterceptor.invoke()</code> → <code>CacheAspectSupport.execute()</code></td>
+					<td>代理接到 Controller 对 <code>availability()</code> 的调用，先检查缓存</td>
+			</tr>
+			<tr>
+					<td><code>findCachedValue()</code> → <code>findInCaches()</code></td>
+					<td>生成键，在名为 <code>availability</code> 的缓存中查找</td>
+			</tr>
+			<tr>
+					<td><code>AbstractCacheInvoker.doGet()</code></td>
+					<td>调用 <code>cache.get(key)</code>，捕获这次读取抛出的异常</td>
+			</tr>
+	</tbody>
+</table>
+<p>在 <code>doGet()</code> 里可以直接看到谁调用了自己的处理方法：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">cache</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">key</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">RuntimeException</span><span class="w"> </span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">getErrorHandler</span><span class="p">().</span><span class="na">handleCacheGetError</span><span class="p">(</span><span class="n">ex</span><span class="p">,</span><span class="w"> </span><span class="n">cache</span><span class="p">,</span><span class="w"> </span><span class="n">key</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">null</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><p><code>getErrorHandler()</code> 取得配置好的对象。Spring 把刚捕获的异常、正在访问的缓存和本次查询的键传给它。默认处理器会重新抛出异常，程序走不到下一行。项目的处理器只记录警告，方法正常结束，执行就回到 <code>catch</code> 中的 <code>return null</code>。这个 <code>null</code> 表示缓存没有给出结果，拦截器接下来调用 <code>AvailabilityService.availability()</code> 查数据库。查库成功后，如果回写缓存也失败，<code>handleCachePutError(...)</code> 记录警告，调用者仍能拿到已经算出的列表。这条故障路径按源码梳理，本次断点实验观察到的是正常的未命中和命中。</p>
+<h2 id="四监听器怎样收到预约事件">四、监听器怎样收到预约事件<a hidden class="anchor" aria-hidden="true" href="#四监听器怎样收到预约事件">#</a></h2>
+<h3 id="创建事件与发布事件是两次调用">创建事件与发布事件是两次调用<a hidden class="anchor" aria-hidden="true" href="#创建事件与发布事件是两次调用">#</a></h3>
+<p>假设用户取消明天 10:00 的预约。<code>BookingService.cancel()</code> 在事务里执行这几行：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="n">slots</span><span class="p">.</span><span class="na">deleteByBookingId</span><span class="p">(</span><span class="n">booking</span><span class="p">.</span><span class="na">getId</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">booking</span><span class="p">.</span><span class="na">cancel</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">events</span><span class="p">.</span><span class="na">publishEvent</span><span class="p">(</span><span class="n">eventFor</span><span class="p">(</span><span class="n">booking</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;CANCELLED&#34;</span><span class="p">));</span><span class="w">
+</span></span></span></code></pre></div><p>前两行释放时段、修改预约状态。最后一行按 Java 的求值顺序可以拆开读：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="n">BookingChangedEvent</span><span class="w"> </span><span class="n">event</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eventFor</span><span class="p">(</span><span class="n">booking</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;CANCELLED&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">events</span><span class="p">.</span><span class="na">publishEvent</span><span class="p">(</span><span class="n">event</span><span class="p">);</span><span class="w">
+</span></span></span></code></pre></div><p>第一行调用项目自己的 <code>eventFor(...)</code>，创建一个普通的 <code>BookingChangedEvent</code> 对象。它保存资源 ID、日期、预约起止时间及 <code>&quot;CANCELLED&quot;</code> 等数据。假如程序停在两行之间，对象已经存在，Spring 还没收到这次事件。</p>
+<p>第二行把对象交给 Spring。<code>events</code> 是通过构造器注入的事件发布器，变量类型是 Spring 的接口 <code>ApplicationEventPublisher</code>。在 IDE 里点进接口，只能看到方法约定；运行时 Java 会调用注入对象的实际实现。<code>publishEvent(...)</code> 返回 <code>void</code>，说明调用方不用接收返回值。这行代码产生的效果是发布事件。如果省掉它，单靠创建对象不会触发本次缓存删除。</p>
+<h3 id="spring-怎么找到监听方法又在何时调用它">Spring 怎么找到监听方法，又在何时调用它<a hidden class="anchor" aria-hidden="true" href="#spring-怎么找到监听方法又在何时调用它">#</a></h3>
+<p><code>BookingEventListeners</code> 标有 <code>@Component</code>。Spring 在启动时发现其中带监听注解的方法，负责删除缓存的是这一段：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="nd">@TransactionalEventListener</span><span class="p">(</span><span class="n">phase</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TransactionPhase</span><span class="p">.</span><span class="na">AFTER_COMMIT</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">evictAvailability</span><span class="p">(</span><span class="n">BookingChangedEvent</span><span class="w"> </span><span class="n">event</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">Cache</span><span class="w"> </span><span class="n">cache</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cacheManager</span><span class="p">.</span><span class="na">getCache</span><span class="p">(</span><span class="s">&#34;availability&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">cache</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="n">cache</span><span class="p">.</span><span class="na">evict</span><span class="p">(</span><span class="n">event</span><span class="p">.</span><span class="na">resourceId</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&#34;:&#34;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">event</span><span class="p">.</span><span class="na">date</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><p>这里的<strong>参数类型</strong>回答“接收什么”。发布的对象是 <code>BookingChangedEvent</code>，与方法参数匹配。即使把方法名从 <code>evictAvailability</code> 改成 <code>clearCache</code>，保留注解和参数类型，它仍然能收到同一种事件。<strong>注解里的阶段</strong>回答“什么时候执行”。沿着这笔取消操作，可以看清三个时刻：</p>
+<ol>
+<li><strong>事务内发布事件。</strong> Spring 找到匹配的监听方法，为当前事务登记一次提交后的调用。此时旧缓存仍在。</li>
+<li><strong>数据库成功提交。</strong> Spring 将事件作为参数传入 <code>evictAvailability(event)</code>，方法体里的 <code>cache.evict(...)</code> 删除该资源当天的缓存。若事务回滚，这个提交后监听方法不会运行。</li>
+<li><strong>下一次查询。</strong> 代理按同一个键查询，缓存未命中，Service 重新计算列表。已经释放的 10:00 时段会重新出现在结果中。</li>
+</ol>
+<p>创建预约走相同的发布路径，只是调用了 <code>eventFor(booking, &quot;CONFIRMED&quot;)</code>。<code>&quot;CONFIRMED&quot;</code> 和 <code>&quot;CANCELLED&quot;</code> 都是同一种事件对象的 <code>action</code> 字段值。创建成功会让旧列表多显示一个已占用时段，取消成功会让旧列表少显示一个已释放时段。两种情况都只需用资源 ID 和日期删除同一个键，因此可以共用监听方法。另一个接收相同事件的 <code>notifyUser()</code> 同样等到提交后触发，并通过 <code>@Async</code> 异步处理通知。</p>
+<h2 id="五为什么等事务提交后再删">五、为什么等事务提交后再删<a hidden class="anchor" aria-hidden="true" href="#五为什么等事务提交后再删">#</a></h2>
+<p>假如把删缓存放在提交之前，两个请求就可能这样交错：</p>
+<ol>
+<li>A 正在预约 10:00，已经写入时段并删除缓存，事务尚未提交。</li>
+<li>B 此时查询，因为没有缓存而访问数据库。B 还看不见 A 未提交的占用记录，于是把“10:00 可用”重新写入缓存。</li>
+<li>A 提交成功。数据库里的 10:00 已被占用，缓存却保留着 B 刚写入的旧列表。</li>
+</ol>
+<p><code>AFTER_COMMIT</code> 避免了这种因提前删除而产生的时序问题，但数据库提交和缓存删除仍是两个操作。若数据库已经提交，而对应缓存删除失败，下一次查询命中旧值时会出现两种结果：</p>
+<table>
+	<thead>
+			<tr>
+					<th>已提交的操作</th>
+					<th>旧缓存显示</th>
+					<th>数据库中的实际状态</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>预约 10:00 成功</td>
+					<td>10:00 仍可选</td>
+					<td>已被占用，再次预约会因时段唯一约束冲突而返回 HTTP 409</td>
+			</tr>
+			<tr>
+					<td>取消 10:00 成功</td>
+					<td>列表里仍看不到 10:00</td>
+					<td>时段已释放，重新查库时会出现在可用列表里</td>
+			</tr>
+	</tbody>
+</table>
+<p>这里还有一个调用方式上的区别。查询上的 <code>@Cacheable</code> 经过 Spring 缓存拦截器，能调用第三节的错误处理器。监听方法里则直接执行 <code>cache.evict(...)</code>，这行代码不会自动经过该处理器。默认 Redis 配置的过期时间可以限制旧缓存的存留时间，写入预约时真正阻止重复占用的是数据库的 <code>UNIQUE (resource_id, slot_start)</code>。上述预约、取消后的缓存变化是按代码时序推演的，本次断点实际观察的是第一节的连续查询。</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+<nav class="paginav">
+  <a class="next" href="https://kelp-z.github.io/posts/leetcode%E7%AC%AC56%E9%A2%98/">
+    <span class="title">下一页 »</span>
+    <span>leetcode第56题</span>
+  </a>
+</nav>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="https://kelp-z.github.io/">Kelp&#39;s Blog</a></span> · 
+
+    
+    
+    <span>
+        Powered by
+        <a href="https://gohugo.io/?utm_source=papermod" rel="noopener" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" id="top-link" class="top-link hidden" aria-label="go to top" title="Go to Top (Alt + G)" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-up">
+        <polyline points="17 11 12 6 7 11"></polyline>
+        <polyline points="17 18 12 13 7 18"></polyline>
+    </svg>
+</a><script>
+    document.addEventListener("click", function (event) {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+        const target = event.target.closest("a, button");
+        if (!target) return;
+
+        const ripple = document.createElement("span");
+        ripple.className = "click-ripple";
+        ripple.style.left = `${event.clientX}px`;
+        ripple.style.top = `${event.clientY}px`;
+        document.body.appendChild(ripple);
+        ripple.addEventListener("animationend", () => ripple.remove(), { once: true });
+    });
+
+    const tocLinks = Array.from(document.querySelectorAll(".post-single > .toc a[href^='#']"));
+    const tocHeadings = tocLinks.map((link) => {
+        try {
+            return { link, heading: document.getElementById(decodeURIComponent(link.hash.slice(1))) };
+        } catch {
+            return { link, heading: null };
+        }
+    }).filter((item) => item.heading);
+
+    if (tocHeadings.length) {
+        let ticking = false;
+        const updateActiveTocLink = () => {
+            let active = tocHeadings[0];
+            for (const item of tocHeadings) {
+                if (item.heading.getBoundingClientRect().top <= 180) active = item;
+            }
+            tocLinks.forEach((link) => link.classList.toggle("is-active", link === active.link));
+            ticking = false;
+        };
+
+        document.addEventListener("scroll", () => {
+            if (!ticking) {
+                requestAnimationFrame(updateActiveTocLink);
+                ticking = true;
+            }
+        }, { passive: true });
+        updateActiveTocLink();
+    }
+</script>
+
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var toplink = document.getElementById("top-link");
+    window.onscroll = function () {
+        const scrollThreshold = window.innerHeight;
+        if (document.body.scrollTop > scrollThreshold || document.documentElement.scrollTop > scrollThreshold) {
+            toplink.classList.remove("hidden");
+        } else {
+            toplink.classList.add("hidden");
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = '复制';
+
+        function copyingDone() {
+            copybutton.innerHTML = '已复制！';
+            setTimeout(() => {
+                copybutton.innerHTML = '复制';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

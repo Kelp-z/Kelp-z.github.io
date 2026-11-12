@@ -152,6 +152,25 @@
 
 <article class="post-entry tag-entry"> 
   <header class="entry-header">
+    <h2 class="entry-hint-parent">ReserveFlow三
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>连续两次查询 1 号会议室同一天的可用时段，Controller 两次都收到了请求，Service 里的查库代码却只执行了一次。理解这次调试，要从 Controller 里的这一行开始：
+return availability.availability(id, date); 一、同一个请求，为什么第二次跳过了 Service 方法体 在 IDEA 的变量窗口里，Controller 持有的 availability 显示为 AvailabilityService$$SpringCGLIB$$0。这是 Spring 为 Service 创建的代理对象。Controller 调用它时，Spring 会先处理方法上的缓存注解：
+@Cacheable(cacheNames = &#34;availability&#34;, key = &#34;#resourceId &#43; &#39;:&#39; &#43; #date&#34;) @Transactional(readOnly = true) public AvailabilityView availability(Long resourceId, LocalDate date) cacheNames 指定缓存名，key 指定如何根据方法参数生成键。例如资源为 1、日期为 2026-11-10，得到的键就是 1:2026-11-10。同一资源换一天查询，会用到另一个键。
+我用 local 配置启动项目，在 Controller 调用 Service 的那一行和 Service 方法体的第一句 resources.existsById(resourceId) 分别设置断点，连续请求同一地址：
+curl.exe &#34;http://localhost:8080/api/resources/1/availability?date=2026-11-10&#34; 请求 Controller 断点 Service 方法体断点 第一次 停住 停住，开始查询数据库 再次查询相同资源和日期 停住 按 F9 后直接返回结果 第一次查询时，缓存里还没有这个键。Spring 继续执行 availability() 方法体：先确认资源存在，再查当天的开放时间和已占用时段，从每半小时一个的候选列表里排除已过去、已被占用的时段。方法最后返回一个 AvailabilityView。查询数据库和计算列表由 Service 完成，读取缓存、把返回值写入缓存由 Spring 代理负责。
+...</p>
+  </div>
+  <footer class="entry-footer">
+
+<span title='2026-11-12 00:00:00 +0000 UTC'>2026年11月12日</span>&nbsp;·&nbsp;<span>3 分钟</span>&nbsp;·&nbsp;<span>Kelp</span></footer>
+  <a class="entry-link" aria-label="post link to ReserveFlow三" href="https://kelp-z.github.io/posts/reserveflow%E4%B8%89/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
     <h2 class="entry-hint-parent">ReserveFlow 二
     </h2>
   </header>

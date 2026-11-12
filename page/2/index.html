@@ -159,6 +159,28 @@
 
 <article class="post-entry"> 
   <header class="entry-header">
+    <h2 class="entry-hint-parent">Hikari 部分源码分析
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>
+1.private static final Logger LOGGER
+**作用**：日志记录器，用于记录连接池的运行日志。 private final AtomicBoolean isShutdown
+作用：原子布尔值，标记连接池是否已关闭。
+private final HikariPool fastPathPool
+​	作用：快速路径池，用于优化热点路径的性能。
+private volatile HikariPool pool ​	作用：主连接池引用，支持运行时动态替换。
+public Connection getConnection() throws SQLException { // 1. 检查连接池是否已关闭 if (this.isClosed()) { throw new SQLException(&#34;HikariDataSource &#34; &#43; this &#43; &#34; has been closed.&#34;); } // 2. 快速路径：如果快速池存在，直接获取 else if (this.fastPathPool != null) { return this.fastPathPool.getConnection(); } // 3. 慢路径：双重检查锁定初始化连接池 else { HikariPool result = this.pool; if (result == null) { synchronized(this) { result = this.pool; if (result == null) { // 初始化连接池 this.pool = result = new HikariPool(this); this.seal(); } } } return result.getConnection(); } } public Connection getConnection(long hardTimeout) throws SQLException { this.suspendResumeLock.acquire(); long startTime = ClockSource.currentTime(); try { long timeout = hardTimeout; while(true) { PoolEntry poolEntry = (PoolEntry)this.connectionBag.borrow(timeout, TimeUnit.MILLISECONDS); if (poolEntry != null) { long now = ClockSource.currentTime(); if (!poolEntry.isMarkedEvicted() &amp;&amp; (ClockSource.elapsedMillis(poolEntry.lastAccessed, now) &lt;= this.aliveBypassWindowMs || !this.isConnectionDead(poolEntry.connection))) { this.metricsTracker.recordBorrowStats(poolEntry, startTime); Connection var10 = poolEntry.createProxyConnection(this.leakTaskFactory.schedule(poolEntry)); return var10; } this.closeConnection(poolEntry, poolEntry.isMarkedEvicted() ? &#34;(connection was evicted)&#34; : &#34;(connection is dead)&#34;); timeout = hardTimeout - ClockSource.elapsedMillis(startTime); if (timeout &gt; 0L) { continue; } } this.metricsTracker.recordBorrowTimeoutStats(startTime); throw this.createTimeoutException(startTime); } } catch (InterruptedException var14) { InterruptedException e = var14; Thread.currentThread().interrupt(); throw new SQLException(this.poolName &#43; &#34; - Interrupted during connection acquisition&#34;, e); } finally { this.suspendResumeLock.release(); } } 获取挂起/恢复锁 this.suspendResumeLock.acquire(); 作用：获取一个锁，用于控制连接池的挂起/恢复操作。
+...</p>
+  </div>
+  <footer class="entry-footer">
+
+<span title='2026-09-07 00:00:00 +0000 UTC'>2026年9月7日</span>&nbsp;·&nbsp;<span>3 分钟</span>&nbsp;·&nbsp;<span>Kelp</span></footer>
+  <a class="entry-link" aria-label="post link to Hikari 部分源码分析" href="https://kelp-z.github.io/posts/hicari/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
     <h2 class="entry-hint-parent">ObjectMapper
     </h2>
   </header>
